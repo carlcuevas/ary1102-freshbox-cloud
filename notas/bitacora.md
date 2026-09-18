@@ -108,33 +108,37 @@ id      nombre                    precio
 
 **Enfoque:** desplegadas vía CloudFormation ([`infra/03-compute.yaml`](../infra/03-compute.yaml)), a través de un `AWS::EC2::LaunchTemplate` + `AWS::AutoScaling::AutoScalingGroup` (`freshbox-asg-app`, min 2 / max 4, Multi-AZ sobre subredes `freshbox-sub-app-1a`/`1b`).
 
-| Campo | Instancia 1 | Instancia 2 |
+**⚠️ Nota importante — reemplazo de instancias por el ASG:** las instancias originales (`i-0cfb5552cdf4faecc`, `i-0d22849f21e783c74`) fueron reemplazadas por el Auto Scaling Group en algún momento tras conectar el ALB (comportamiento normal de auto-healing/mantenimiento del ASG). Las instancias **actuales y vigentes** son las siguientes:
+
+| Campo | Instancia 1 (app-1a) | Instancia 2 (app-1b) |
 |---|---|---|
-| InstanceId | `i-0cfb5552cdf4faecc` | `i-0d22849f21e783c74` |
-| Docker + 5 contenedores | ✅ Verificado (`docker ps`, 5/5 Up) | ⬜ Verificando |
+| InstanceId actual | `i-0dd7f85d9dfc342ea` | `i-016e07318bb71bcbe` |
+| Estado ASG | Healthy / InService | Healthy / InService |
+| Docker + 5 contenedores | ✅ Verificado (`docker ps`, 5/5 Up, 2h) | ✅ Verificado (`docker ps`, 5/5 Up, 2h) |
+| Registrado en Target Group ALB | ✅ Healthy | ✅ Healthy |
 | Cifrado EBS | ✅ (gp3, 8GB, vía Launch Template) | ✅ (mismo Launch Template) |
 
-**Verificación instancia 1 (2026-09-18, vía Session Manager):**
+**Verificación instancia i-016e07318bb71bcbe (2026-09-18, vía Session Manager):**
 ```
 NAMES            STATUS
-frontend         Up 6 minutes
-delete-product   Up 6 minutes
-update-product   Up 6 minutes
-create-product   Up 6 minutes
-get-products     Up 6 minutes
+frontend         Up 2 hours
+delete-product   Up 2 hours
+update-product   Up 2 hours
+create-product   Up 2 hours
+get-products     Up 2 hours
 ```
 
-**Verificación instancia 2 (2026-09-18, vía Session Manager):**
+**Verificación instancia i-0dd7f85d9dfc342ea (2026-09-18, vía Session Manager):**
 ```
 NAMES            STATUS
-frontend         Up 12 minutes
-delete-product   Up 12 minutes
-update-product   Up 12 minutes
-create-product   Up 12 minutes
-get-products     Up 12 minutes
+frontend         Up 2 hours
+delete-product   Up 2 hours
+update-product   Up 2 hours
+create-product   Up 2 hours
+get-products     Up 2 hours
 ```
 
-**Estado:** ✅ Ambas instancias con 5/5 contenedores operativos — Multi-AZ confirmado
+**Estado:** ✅ Ambas instancias vigentes con 5/5 contenedores operativos — Multi-AZ y auto-healing del ASG confirmados
 
 ---
 
