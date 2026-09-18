@@ -74,34 +74,57 @@
 
 ---
 
-## 4. EC2 — Capa Data (MySQL)
+## 4. EC2 — Capa Data (MySQL/MariaDB)
+
+**Enfoque:** desplegado vía CloudFormation ([`infra/03-compute.yaml`](../infra/03-compute.yaml)), stack `freshbox-compute`, usando MariaDB (wire-compatible con MySQL, paquete nativo de Amazon Linux 2023 — ver nota técnica sección 6).
 
 | Campo | Valor |
 |---|---|
 | Nombre instancia | `freshbox-ec2-mysql` |
+| InstanceId | `i-096324afebf1a0539` |
 | Tipo | t4g.small |
-| AMI | Amazon Linux 2023 ARM |
-| Subred | `freshbox-sub-data-1a` |
-| IP privada | _pendiente_ |
-| Cifrado EBS | ⬜ |
-| AWS Backup configurado | ⬜ |
-| init.sql ejecutado | ⬜ |
+| AMI | Amazon Linux 2023 ARM64 (resuelta vía SSM Parameter Store, siempre la más reciente) |
+| Subred | `freshbox-sub-data-1a` (`subnet-0addc2a91142c8715`) |
+| IP privada | `10.0.1.43` |
+| Cifrado EBS | ✅ (gp3, 8GB) |
+| Base de datos poblada | ✅ Verificado vía Session Manager (`SELECT * FROM productos` → 5 registros correctos) |
+| AWS Backup configurado | ⬜ Pendiente (Tarea 6, no incluido aún en el template) |
 
-**Estado:** ⬜ Pendiente
+**Verificación (2026-09-18, vía AWS Systems Manager, sin SSH):**
+```
+id      nombre                    precio
+1       Manzana organica 1kg      3490.00
+2       Lechuga hidroponica       1990.00
+3       Granola artesanal 500g    4990.00
+4       Jugo natural naranja 1L   2990.00
+5       Mix frutos secos 250g     5490.00
+```
+
+**Estado:** ✅ Instancia y datos verificados — ⬜ AWS Backup pendiente
 
 ---
 
 ## 5. EC2 — Capa App
 
+**Enfoque:** desplegadas vía CloudFormation ([`infra/03-compute.yaml`](../infra/03-compute.yaml)), a través de un `AWS::EC2::LaunchTemplate` + `AWS::AutoScaling::AutoScalingGroup` (`freshbox-asg-app`, min 2 / max 4, Multi-AZ sobre subredes `freshbox-sub-app-1a`/`1b`).
+
 | Campo | Instancia 1 | Instancia 2 |
 |---|---|---|
-| Nombre | `freshbox-ec2-app-1a` | `freshbox-ec2-app-1b` |
-| Subred | `freshbox-sub-app-1a` | `freshbox-sub-app-1b` |
-| IP privada | _pendiente_ | _pendiente_ |
-| Docker instalado | ⬜ | ⬜ |
-| Cifrado EBS | ⬜ | ⬜ |
+| InstanceId | `i-0cfb5552cdf4faecc` | `i-0d22849f21e783c74` |
+| Docker + 5 contenedores | ✅ Verificado (`docker ps`, 5/5 Up) | ⬜ Verificando |
+| Cifrado EBS | ✅ (gp3, 8GB, vía Launch Template) | ✅ (mismo Launch Template) |
 
-**Estado:** ⬜ Pendiente
+**Verificación instancia 1 (2026-09-18, vía Session Manager):**
+```
+NAMES            STATUS
+frontend         Up 6 minutes
+delete-product   Up 6 minutes
+update-product   Up 6 minutes
+create-product   Up 6 minutes
+get-products     Up 6 minutes
+```
+
+**Estado:** ✅ Instancia 1 con 5/5 contenedores operativos — pendiente confirmar instancia 2
 
 ---
 
