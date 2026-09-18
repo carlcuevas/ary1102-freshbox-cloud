@@ -1,0 +1,238 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  FreshBox SpA - EP1 ARY1102 - Capa de Computo.
+  Crea:
+    - 1x EC2 MySQL (MariaDB, wire-compatible) en la capa Data, con EBS
+      cifrado, poblada automaticamente con el esquema y los 5 productos
+      organicos (equivalente a init.sql).
+    - 1x Launch Template para la capa App (Amazon Linux 2023 ARM + Docker),
+      con EBS cifrado, que instala Docker y despliega los 5 contenedores
+      (frontend + 4 backend) apuntando al MySQL interno.
+    - 1x Auto Scaling Group Multi-AZ (min 2 / max 4) sobre las subredes
+      privadas App, listo para conectarse a un Target Group del ALB
+      (Tarea 10) mediante una actualizacion posterior de este stack.
+
+Parameters:
+  NetworkStackName:
+    Type: String
+    Default: freshbox-red
+    Description: Stack de red del cual se importan VPC y subredes.
+
+  SecurityGroupsStackName:
+    Type: String
+    Default: freshbox-sg
+    Description: Stack de Security Groups del cual se importan los SG por capa.
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
+    Description: AMI Amazon Linux 2023 ARM64 mas reciente (via SSM Parameter Store).
+
+  InstanceType:
+    Type: String
+    Default: t4g.small
+
+  DBName:
+    Type: String
+    Default: freshbox
+
+  DBUser:
+    Type: String
+    Default: alumno
+
+  DBPassword:
+    Type: String
+    Default: alumno123
+    NoEcho: true
+
+  TargetGroupArn:
+    Type: String
+    Default: ""
+    Description: >
+      ARN del Target Group del ALB (Tarea 10). Se deja vacio en el primer
+      despliegue; una vez creado el ALB, se actualiza este stack pasando
+      este parametro para conectar el ASG automaticamente.
+
+Conditions:
+  HasTargetGroup: !Not [!Equals [!Ref TargetGroupArn, ""]]
+
+Resources:
+
+  # ============================================================
+  # EC2 MySQL (MariaDB) - Capa Data
+  # ============================================================
+  MySQLInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      SubnetId:
+        Fn::ImportValue: !Sub "${NetworkStackName}-SubnetData1AId"
+      SecurityGroupIds:
+        - Fn::ImportValue: !Sub "${SecurityGroupsStackName}-SGDataId"
+      IamInstanceProfile: LabInstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 8
+            VolumeType: gp3
+            Encrypted: true
+      Tags:
+        - Key: Name
+          Value: freshbox-ec2-mysql
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -x
+          dnf update -y
+          dnf install -y mariadb105-server
+
+          # Permitir conexiones desde otras instancias de la VPC (capa App)
+          sed -i 's/^bind-address.*/bind-address=0.0.0.0/' /etc/my.cnf.d/mariadb-server.cnf || true
+          grep -q '^bind-address' /etc/my.cnf.d/mariadb-server.cnf || echo 'bind-address=0.0.0.0' >> /etc/my.cnf.d/mariadb-server.cnf
+
+          systemctl enable mariadb
+          systemctl start mariadb
+
+          mysql -u root <<SQL
+          CREATE DATABASE IF NOT EXISTS ${DBName};
+          CREATE USER IF NOT EXISTS '${DBUser}'@'%' IDENTIFIED BY '${DBPassword}';
+          GRANT ALL PRIVILEGES ON ${DBName}.* TO '${DBUser}'@'%';
+          FLUSH PRIVILEGES;
+          USE ${DBName};
+          CREATE TABLE IF NOT EXISTS productos (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              nombre VARCHAR(255) NOT NULL,
+              descripcion TEXT,
+              precio DECIMAL(10,2) NOT NULL,
+              stock INT NOT NULL DEFAULT 0,
+              categoria VARCHAR(100),
+              imagen_url VARCHAR(500),
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+          );
+          INSERT INTO productos (nombre, descripcion, precio, stock, categoria) VALUES
+          ('Manzana organica 1kg', 'Manzanas rojas organicas, cultivo sin pesticidas, bolsa 1 kilogramo', 3490.00, 120, 'Frutas'),
+          ('Lechuga hidroponica', 'Lechuga fresca cultivada en sistema hidroponico, libre de tierra', 1990.00, 80, 'Verduras'),
+          ('Granola artesanal 500g', 'Granola con avena, miel, almendras y arandanos, sin azucar refinada', 4990.00, 60, 'Snacks'),
+          ('Jugo natural naranja 1L', 'Jugo 100% natural de naranja, sin preservantes ni colorantes', 2990.00, 100, 'Bebidas'),
+          ('Mix frutos secos 250g', 'Mezcla de almendras, nueces, castanas de caju y pasas organicas', 5490.00, 45, 'Snacks');
+          SQL
+
+          systemctl restart mariadb
+          echo "=== MySQL (MariaDB) EP1 provisioning completado ===" > /var/log/freshbox-mysql-init.log
+
+  # ============================================================
+  # Launch Template - Capa App (Amazon Linux 2023 ARM + Docker)
+  # ============================================================
+  AppLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    DependsOn: MySQLInstance
+    Properties:
+      LaunchTemplateName: freshbox-app-lt
+      LaunchTemplateData:
+        ImageId: !Ref LatestAmiId
+        InstanceType: !Ref InstanceType
+        IamInstanceProfile:
+          Name: LabInstanceProfile
+        SecurityGroupIds:
+          - Fn::ImportValue: !Sub "${SecurityGroupsStackName}-SGAppId"
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeSize: 8
+              VolumeType: gp3
+              Encrypted: true
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: freshbox-ec2-app
+        UserData:
+          Fn::Base64:
+            Fn::Sub:
+              - |
+                #!/bin/bash
+                set -x
+                dnf update -y
+                dnf install -y docker
+                systemctl enable docker
+                systemctl start docker
+                usermod -aG docker ec2-user
+
+                aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
+
+                docker network create freshbox-net || true
+
+                REPO_PREFIX="${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/freshbox"
+                DB_HOST="${MySQLPrivateIp}"
+
+                docker pull "$REPO_PREFIX-get-products:latest" && \
+                  docker run -d --name get-products --network freshbox-net --network-alias get-products \
+                    -e DB_HOST="$DB_HOST" -e DB_USER=${DBUser} -e DB_PASS=${DBPassword} -e DB_NAME=${DBName} -e PORT=3001 \
+                    "$REPO_PREFIX-get-products:latest"
+
+                docker pull "$REPO_PREFIX-create-product:latest" && \
+                  docker run -d --name create-product --network freshbox-net --network-alias create-product \
+                    -e DB_HOST="$DB_HOST" -e DB_USER=${DBUser} -e DB_PASS=${DBPassword} -e DB_NAME=${DBName} -e PORT=3002 \
+                    "$REPO_PREFIX-create-product:latest"
+
+                docker pull "$REPO_PREFIX-update-product:latest" && \
+                  docker run -d --name update-product --network freshbox-net --network-alias update-product \
+                    -e DB_HOST="$DB_HOST" -e DB_USER=${DBUser} -e DB_PASS=${DBPassword} -e DB_NAME=${DBName} -e PORT=3003 \
+                    "$REPO_PREFIX-update-product:latest"
+
+                docker pull "$REPO_PREFIX-delete-product:latest" && \
+                  docker run -d --name delete-product --network freshbox-net --network-alias delete-product \
+                    -e DB_HOST="$DB_HOST" -e DB_USER=${DBUser} -e DB_PASS=${DBPassword} -e DB_NAME=${DBName} -e PORT=3004 \
+                    "$REPO_PREFIX-delete-product:latest"
+
+                docker pull "$REPO_PREFIX-frontend:latest" && \
+                  docker run -d --name frontend --network freshbox-net -p 80:80 \
+                    "$REPO_PREFIX-frontend:latest"
+
+                echo "=== FreshBox App EP1 provisioning completado ===" > /var/log/freshbox-app-init.log
+              - MySQLPrivateIp: !GetAtt MySQLInstance.PrivateIp
+
+  # ============================================================
+  # Auto Scaling Group - Capa App (Multi-AZ, min 2 / max 4)
+  # ============================================================
+  AppAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: freshbox-asg-app
+      MinSize: "2"
+      MaxSize: "4"
+      DesiredCapacity: "2"
+      HealthCheckType: EC2
+      HealthCheckGracePeriod: 120
+      LaunchTemplate:
+        LaunchTemplateId: !Ref AppLaunchTemplate
+        Version: !GetAtt AppLaunchTemplate.LatestVersionNumber
+      VPCZoneIdentifier:
+        - Fn::ImportValue: !Sub "${NetworkStackName}-SubnetApp1AId"
+        - Fn::ImportValue: !Sub "${NetworkStackName}-SubnetApp1BId"
+      TargetGroupARNs: !If
+        - HasTargetGroup
+        - - !Ref TargetGroupArn
+        - !Ref "AWS::NoValue"
+      Tags:
+        - Key: Name
+          Value: freshbox-ec2-app
+          PropagateAtLaunch: true
+
+Outputs:
+  MySQLInstanceId:
+    Value: !Ref MySQLInstance
+    Export:
+      Name: !Sub "${AWS::StackName}-MySQLInstanceId"
+
+  MySQLPrivateIp:
+    Value: !GetAtt MySQLInstance.PrivateIp
+    Export:
+      Name: !Sub "${AWS::StackName}-MySQLPrivateIp"
+
+  AutoScalingGroupName:
+    Value: !Ref AppAutoScalingGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-AutoScalingGroupName"
