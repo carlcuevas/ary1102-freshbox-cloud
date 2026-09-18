@@ -1,0 +1,247 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  FreshBox SpA - EP1 ARY1102 - Capa de Red.
+  Crea la VPC (10.0.0.0/22), 6 subredes Multi-AZ (Web publica, App privada,
+  Data privada), Internet Gateway, NAT Gateway y las Route Tables publica y
+  privada correspondientes.
+
+Resources:
+
+  # ============================================================
+  # VPC
+  # ============================================================
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/22
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: freshbox-vpc
+
+  # ============================================================
+  # Subredes - Capa 1 Web (publica)
+  # ============================================================
+  SubnetWeb1A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.0.0/26
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: freshbox-sub-web-1a
+
+  SubnetWeb1B:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.0.64/26
+      AvailabilityZone: us-east-1b
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: freshbox-sub-web-1b
+
+  # ============================================================
+  # Subredes - Capa 2 App (privada)
+  # ============================================================
+  SubnetApp1A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.0.128/26
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: freshbox-sub-app-1a
+
+  SubnetApp1B:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.0.192/26
+      AvailabilityZone: us-east-1b
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: freshbox-sub-app-1b
+
+  # ============================================================
+  # Subredes - Capa 3 Data (privada)
+  # ============================================================
+  SubnetData1A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/26
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: freshbox-sub-data-1a
+
+  SubnetData1B:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.64/26
+      AvailabilityZone: us-east-1b
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: freshbox-sub-data-1b
+
+  # ============================================================
+  # Internet Gateway
+  # ============================================================
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: freshbox-igw
+
+  IGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # ============================================================
+  # NAT Gateway (en subred publica Web-1A) + Elastic IP
+  # ============================================================
+  NatEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: IGWAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: freshbox-natgw-eip
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEIP.AllocationId
+      SubnetId: !Ref SubnetWeb1A
+      Tags:
+        - Key: Name
+          Value: freshbox-natgw
+
+  # ============================================================
+  # Route Table publica -> Internet Gateway
+  # ============================================================
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: freshbox-rt-public
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: IGWAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetWeb1AAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetWeb1A
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetWeb1BAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetWeb1B
+      RouteTableId: !Ref PublicRouteTable
+
+  # ============================================================
+  # Route Table privada -> NAT Gateway (App + Data)
+  # ============================================================
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: freshbox-rt-private
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnetApp1AAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetApp1A
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnetApp1BAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetApp1B
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnetData1AAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetData1A
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnetData1BAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetData1B
+      RouteTableId: !Ref PrivateRouteTable
+
+Outputs:
+  VpcId:
+    Value: !Ref VPC
+    Export:
+      Name: !Sub "${AWS::StackName}-VpcId"
+
+  SubnetWeb1AId:
+    Value: !Ref SubnetWeb1A
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetWeb1AId"
+
+  SubnetWeb1BId:
+    Value: !Ref SubnetWeb1B
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetWeb1BId"
+
+  SubnetApp1AId:
+    Value: !Ref SubnetApp1A
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetApp1AId"
+
+  SubnetApp1BId:
+    Value: !Ref SubnetApp1B
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetApp1BId"
+
+  SubnetData1AId:
+    Value: !Ref SubnetData1A
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetData1AId"
+
+  SubnetData1BId:
+    Value: !Ref SubnetData1B
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetData1BId"
+
+  NatGatewayId:
+    Value: !Ref NatGateway
+    Export:
+      Name: !Sub "${AWS::StackName}-NatGatewayId"
