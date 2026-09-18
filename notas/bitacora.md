@@ -41,20 +41,24 @@
 | Route Table pública | `freshbox-rt-public` | ruta 0.0.0.0/0 → IGW | - | Asociada a subredes web |
 | Route Table privada | `freshbox-rt-private` | ruta 0.0.0.0/0 → NAT GW | - | Asociada a subredes app + data |
 
-**IDs de recursos (completar tras `describe-stacks`):**
+**IDs de recursos (confirmados tras `describe-stacks`, 2026-09-18):**
 
 | Output | Valor |
 |---|---|
-| VpcId | _pendiente_ |
-| SubnetWeb1AId | _pendiente_ |
-| SubnetWeb1BId | _pendiente_ |
-| SubnetApp1AId | _pendiente_ |
-| SubnetApp1BId | _pendiente_ |
-| SubnetData1AId | _pendiente_ |
-| SubnetData1BId | _pendiente_ |
-| NatGatewayId | _pendiente_ |
+| VpcId | `vpc-0be08aefab15d0945` |
+| SubnetWeb1AId | `subnet-0a40f4c83d8495d9a` |
+| SubnetWeb1BId | `subnet-0dc7a0d54e8ec221d` |
+| SubnetApp1AId | `subnet-003b9d4445fb50bf0` |
+| SubnetApp1BId | `subnet-0f6be67406b652af2` |
+| SubnetData1AId | `subnet-0addc2a91142c8715` |
+| SubnetData1BId | `subnet-07bfca66144541cee` |
+| NatGatewayId | `nat-0684d24f66a51736d` |
+| Internet Gateway | `igw-0d0634691ae9d0ece` |
+| NAT Elastic IP | `100.27.78.176` |
+| Public Route Table | `rtb-006d69391a9eef615` |
+| Private Route Table | `rtb-07d378b8b99c8e63d` |
 
-**Estado:** ⬜ Template listo y subido al repo — pendiente de ejecutar `create-stack` en el Lab y confirmar `CREATE_COMPLETE`
+**Estado:** ✅ **CREATE_COMPLETE** — Stack `freshbox-red` desplegado exitosamente en AWS Academy Learner Lab el 2026-09-18.
 
 ---
 

@@ -1,0 +1,134 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  FreshBox SpA - EP1 ARY1102 - Security Groups segmentados por capa.
+  Crea 3 Security Groups encadenados (minimo privilegio):
+    - SG-ALB:  recibe trafico publico en 80/443
+    - SG-App:  solo recibe trafico desde SG-ALB (80/443)
+    - SG-Data: solo recibe trafico desde SG-App (3306/MySQL)
+  Importa el VpcId exportado por el stack de red (freshbox-red).
+
+Parameters:
+  NetworkStackName:
+    Type: String
+    Default: freshbox-red
+    Description: Nombre del stack de red del cual se importa el VpcId.
+
+Resources:
+
+  # ============================================================
+  # SG - Application Load Balancer (capa publica)
+  # ============================================================
+  SGAlb:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "FreshBox - SG ALB - trafico publico 80/443"
+      VpcId:
+        Fn::ImportValue: !Sub "${NetworkStackName}-VpcId"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: "HTTP publico"
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: "HTTPS publico"
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+          Description: "Salida libre hacia la capa App"
+      Tags:
+        - Key: Name
+          Value: freshbox-sg-alb
+
+  # ============================================================
+  # SG - EC2 Aplicacion (capa privada App)
+  # Solo acepta trafico proveniente del SG del ALB
+  # ============================================================
+  SGApp:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "FreshBox - SG App - solo trafico desde el ALB"
+      VpcId:
+        Fn::ImportValue: !Sub "${NetworkStackName}-VpcId"
+      Tags:
+        - Key: Name
+          Value: freshbox-sg-app
+
+  SGAppIngressHttpFromAlb:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SGApp
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      SourceSecurityGroupId: !Ref SGAlb
+      Description: "HTTP desde SG-ALB"
+
+  SGAppIngressHttpsFromAlb:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SGApp
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: !Ref SGAlb
+      Description: "HTTPS desde SG-ALB"
+
+  SGAppEgressAll:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref SGApp
+      IpProtocol: "-1"
+      CidrIp: 0.0.0.0/0
+      Description: "Salida libre (NAT GW: ECR pull, updates, etc.)"
+
+  # ============================================================
+  # SG - EC2 Base de Datos MySQL (capa privada Data)
+  # Solo acepta trafico proveniente del SG de la capa App
+  # ============================================================
+  SGData:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "FreshBox - SG Data - solo MySQL desde SG-App"
+      VpcId:
+        Fn::ImportValue: !Sub "${NetworkStackName}-VpcId"
+      Tags:
+        - Key: Name
+          Value: freshbox-sg-bd
+
+  SGDataIngressMysqlFromApp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SGData
+      IpProtocol: tcp
+      FromPort: 3306
+      ToPort: 3306
+      SourceSecurityGroupId: !Ref SGApp
+      Description: "MySQL 3306 desde SG-App"
+
+  SGDataEgressAll:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref SGData
+      IpProtocol: "-1"
+      CidrIp: 0.0.0.0/0
+      Description: "Salida libre (via NAT GW, para parches/backups)"
+
+Outputs:
+  SGAlbId:
+    Value: !Ref SGAlb
+    Export:
+      Name: !Sub "${AWS::StackName}-SGAlbId"
+
+  SGAppId:
+    Value: !Ref SGApp
+    Export:
+      Name: !Sub "${AWS::StackName}-SGAppId"
+
+  SGDataId:
+    Value: !Ref SGData
+    Export:
+      Name: !Sub "${AWS::StackName}-SGDataId"
