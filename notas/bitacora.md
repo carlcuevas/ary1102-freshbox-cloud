@@ -18,21 +18,43 @@
 
 ## 2. Infraestructura de red (VPC)
 
+**Enfoque:** Infraestructura como Código (IaC) con **AWS CloudFormation**, en vez de creación manual por consola. Se validó previamente que AWS Academy Learner Lab permite crear/eliminar stacks CloudFormation reales (prueba con stack `zz-test-stack`, resultado `CREATE_IN_PROGRESS` → eliminado limpiamente) y que los servicios EC2/VPC/ELB/ASG/Backup/ECR están permitidos (confirmado con `--dry-run` en EC2 y create/delete real en ECR).
+
+- **Template:** [`infra/01-red.yaml`](../infra/01-red.yaml)
+- **Nombre del stack:** `freshbox-red`
+- **Comando de despliegue (ejecutado en AWS CloudShell):**
+  ```bash
+  aws cloudformation create-stack --stack-name freshbox-red --template-body file://01-red.yaml
+  ```
+
 | Recurso | Nombre | Valor / CIDR | AZ | Notas |
 |---|---|---|---|---|
 | VPC | `freshbox-vpc` | 10.0.0.0/22 | - | |
-| Subred pública Web | `freshbox-sub-web-1a` | 10.0.0.0/26 | us-east-1a | Auto-assign IP pública ON |
+| Subred pública Web | `freshbox-sub-web-1a` | 10.0.0.0/26 | us-east-1a | Auto-assign IP pública ON (`MapPublicIpOnLaunch: true`) |
 | Subred pública Web | `freshbox-sub-web-1b` | 10.0.0.64/26 | us-east-1b | Auto-assign IP pública ON |
 | Subred privada App | `freshbox-sub-app-1a` | 10.0.0.128/26 | us-east-1a | |
 | Subred privada App | `freshbox-sub-app-1b` | 10.0.0.192/26 | us-east-1b | |
 | Subred privada Data | `freshbox-sub-data-1a` | 10.0.1.0/26 | us-east-1a | |
 | Subred privada Data | `freshbox-sub-data-1b` | 10.0.1.64/26 | us-east-1b | |
 | Internet Gateway | `freshbox-igw` | - | - | Atado a `freshbox-vpc` |
-| NAT Gateway | `freshbox-natgw` | - | us-east-1a (en subred pública) | Elastic IP: _pendiente_ |
+| NAT Gateway | `freshbox-natgw` | - | us-east-1a (en subred pública) | Elastic IP: _pendiente de confirmar tras despliegue_ |
 | Route Table pública | `freshbox-rt-public` | ruta 0.0.0.0/0 → IGW | - | Asociada a subredes web |
 | Route Table privada | `freshbox-rt-private` | ruta 0.0.0.0/0 → NAT GW | - | Asociada a subredes app + data |
 
-**Estado:** ⬜ Pendiente de completar
+**IDs de recursos (completar tras `describe-stacks`):**
+
+| Output | Valor |
+|---|---|
+| VpcId | _pendiente_ |
+| SubnetWeb1AId | _pendiente_ |
+| SubnetWeb1BId | _pendiente_ |
+| SubnetApp1AId | _pendiente_ |
+| SubnetApp1BId | _pendiente_ |
+| SubnetData1AId | _pendiente_ |
+| SubnetData1BId | _pendiente_ |
+| NatGatewayId | _pendiente_ |
+
+**Estado:** ⬜ Template listo y subido al repo — pendiente de ejecutar `create-stack` en el Lab y confirmar `CREATE_COMPLETE`
 
 ---
 
