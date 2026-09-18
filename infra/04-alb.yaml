@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  FreshBox SpA - EP1 ARY1102 - Application Load Balancer.
+  Crea un ALB internet-facing en las subredes publicas Web (Multi-AZ),
+  con Target Group apuntando al puerto 80 de las instancias de la capa
+  App (health check "/"), y un Listener HTTP en el puerto 80.
+
+  IMPORTANTE: este stack NO registra instancias por si mismo. Las
+  instancias se conectan al Target Group mediante el Auto Scaling
+  Group del stack de Compute (freshbox-compute), actualizando ese
+  stack con el parametro TargetGroupArn (ver Output TargetGroupArn
+  de este stack).
+
+Parameters:
+  NetworkStackName:
+    Type: String
+    Default: freshbox-red
+    Description: Stack de red del cual se importan VPC y subredes publicas.
+
+  SecurityGroupsStackName:
+    Type: String
+    Default: freshbox-sg
+    Description: Stack de Security Groups del cual se importa el SG del ALB.
+
+Resources:
+
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: freshbox-alb
+      Scheme: internet-facing
+      Type: application
+      IpAddressType: ipv4
+      SecurityGroups:
+        - Fn::ImportValue: !Sub "${SecurityGroupsStackName}-SGAlbId"
+      Subnets:
+        - Fn::ImportValue: !Sub "${NetworkStackName}-SubnetWeb1AId"
+        - Fn::ImportValue: !Sub "${NetworkStackName}-SubnetWeb1BId"
+      Tags:
+        - Key: Name
+          Value: freshbox-alb
+
+  AppTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: freshbox-tg-app
+      Port: 80
+      Protocol: HTTP
+      TargetType: instance
+      VpcId:
+        Fn::ImportValue: !Sub "${NetworkStackName}-VpcId"
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: /
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: "200"
+      Tags:
+        - Key: Name
+          Value: freshbox-tg-app
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref AppTargetGroup
+
+Outputs:
+  AlbDnsName:
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+    Export:
+      Name: !Sub "${AWS::StackName}-AlbDnsName"
+
+  TargetGroupArn:
+    Value: !Ref AppTargetGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-TargetGroupArn"
+
+  LoadBalancerArn:
+    Value: !Ref ApplicationLoadBalancer
+    Export:
+      Name: !Sub "${AWS::StackName}-LoadBalancerArn"
