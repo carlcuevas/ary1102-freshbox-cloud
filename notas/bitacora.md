@@ -161,15 +161,50 @@ Repositorios creados y las 5 imágenes construidas y subidas desde AWS CloudShel
 
 ## 7. ALB + Target Group + Auto Scaling Group
 
+**Enfoque:** desplegado vía CloudFormation ([`infra/04-alb.yaml`](../infra/04-alb.yaml)), stack `freshbox-alb`. El ASG del stack `freshbox-compute` se conectó al Target Group mediante `update-stack` (parámetro `TargetGroupArn`), y las 2 instancias existentes se registraron manualmente con `aws elbv2 register-targets` (el update de CloudFormation no re-registra instancias ya corriendo).
+
 | Campo | Valor |
 |---|---|
 | Nombre ALB | `freshbox-alb` |
-| DNS del ALB | _pendiente_ |
+| DNS del ALB | `freshbox-alb-933788468.us-east-1.elb.amazonaws.com` |
+| ARN ALB | `arn:aws:elasticloadbalancing:us-east-1:334767299218:loadbalancer/app/freshbox-alb/1cbf2b4f05bbdfa3` |
 | Target Group | `freshbox-tg-app` |
-| Health check path | `/` |
+| ARN Target Group | `arn:aws:elasticloadbalancing:us-east-1:334767299218:targetgroup/freshbox-tg-app/de72db1f579fcad9` |
+| Health check path | `/` (200 OK) |
 | ASG mínimo/máximo | 2 / 4 |
+| Targets healthy | ✅ `i-0cfb5552cdf4faecc` (healthy), `i-0d22849f21e783c74` (healthy) |
 
-**Estado:** ⬜ Pendiente
+**Estado:** ✅ CREATE_COMPLETE + ambos targets healthy
+
+---
+
+## 8bis. 🎯 VALIDACIÓN END-TO-END (ALB → EC2 → MySQL) — HITO CRÍTICO
+
+**Comando ejecutado (2026-09-18):**
+```bash
+curl http://freshbox-alb-933788468.us-east-1.elb.amazonaws.com/api/products
+```
+
+**Resultado:** HTTP 200, JSON con los 5 productos reales, consultados en vivo desde MySQL a través de todo el flujo:
+`Internet → ALB (SG-ALB) → EC2 App (SG-App, nginx proxy → get-products:3001) → EC2 MySQL (SG-Data, 10.0.1.43)`
+
+```json
+[
+  {"id":5,"nombre":"Mix frutos secos 250g", ...},
+  {"id":4,"nombre":"Jugo natural naranja 1L", ...},
+  {"id":3,"nombre":"Granola artesanal 500g", ...},
+  {"id":2,"nombre":"Lechuga hidroponica", ...},
+  {"id":1,"nombre":"Manzana organica 1kg", ...}
+]
+```
+
+**Esto confirma:**
+- Segmentación de red por capas funcionando (tráfico pasó por las 3 capas correctamente)
+- Security Groups encadenados correctamente (ALB→App→Data, sin abrir puertos de más)
+- nginx haciendo reverse proxy interno correctamente (fix de la Tarea 1 validado en producción)
+- Alta disponibilidad Multi-AZ operativa (2 targets healthy en 2 AZs distintas)
+
+**Pendiente para completar la Tarea 11:** probar POST/PUT/DELETE (no solo GET) desde el navegador (frontend) y/o `curl`, para evidenciar el CRUD completo tal como exige la pauta.
 
 ---
 
