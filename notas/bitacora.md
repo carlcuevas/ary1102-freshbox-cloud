@@ -124,7 +124,17 @@ create-product   Up 6 minutes
 get-products     Up 6 minutes
 ```
 
-**Estado:** ✅ Instancia 1 con 5/5 contenedores operativos — pendiente confirmar instancia 2
+**Verificación instancia 2 (2026-09-18, vía Session Manager):**
+```
+NAMES            STATUS
+frontend         Up 12 minutes
+delete-product   Up 12 minutes
+update-product   Up 12 minutes
+create-product   Up 12 minutes
+get-products     Up 12 minutes
+```
+
+**Estado:** ✅ Ambas instancias con 5/5 contenedores operativos — Multi-AZ confirmado
 
 ---
 
