@@ -204,7 +204,17 @@ curl http://freshbox-alb-933788468.us-east-1.elb.amazonaws.com/api/products
 - nginx haciendo reverse proxy interno correctamente (fix de la Tarea 1 validado en producción)
 - Alta disponibilidad Multi-AZ operativa (2 targets healthy en 2 AZs distintas)
 
-**Pendiente para completar la Tarea 11:** probar POST/PUT/DELETE (no solo GET) desde el navegador (frontend) y/o `curl`, para evidenciar el CRUD completo tal como exige la pauta.
+**CRUD completo validado (2026-09-18)** — las 4 operaciones probadas vía `curl` contra el DNS del ALB:
+
+| Método | Comando | Resultado |
+|---|---|---|
+| GET | `curl .../api/products` | 5 productos listados |
+| POST | `curl -X POST .../api/products -d '{"nombre":"Quinoa organica 500g",...}'` | Producto `id:6` creado, HTTP 200 |
+| PUT | `curl -X PUT .../api/products/6 -d '{"nombre":"Quinoa organica 1kg",...}'` | Producto `id:6` actualizado (precio 4990→8990, stock 80→50) |
+| DELETE | `curl -X DELETE .../api/products/6` | `{"message":"Producto eliminado correctamente","id":6}` |
+| GET (verificación) | `curl .../api/products` | Vuelven a aparecer exactamente los 5 productos originales (ids 1-5) |
+
+**✅ Tarea 11 (Validación end-to-end) — 100% COMPLETA.** Este es el bloque de evidencia principal para el indicador 12 (10%) y el checklist "Validación Funcional (Demo CRUD)" de la pauta EP1 — recomendado repetir esta misma secuencia en vivo durante la presentación/demo, usando el frontend web (`http://<ALB-DNS>/`) en vez de `curl` para una demostración más visual.
 
 ---
 
