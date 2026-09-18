@@ -107,15 +107,22 @@
 
 ## 6. Amazon ECR
 
+Repositorios creados y las 5 imágenes construidas y subidas desde AWS CloudShell (2026-09-18). Cuenta AWS: `334767299218`, región `us-east-1`.
+
 | Repositorio | URI | Push realizado |
 |---|---|---|
-| freshbox-frontend | | ⬜ |
-| freshbox-get-products | | ⬜ |
-| freshbox-create-product | | ⬜ |
-| freshbox-update-product | | ⬜ |
-| freshbox-delete-product | | ⬜ |
+| freshbox-frontend | `334767299218.dkr.ecr.us-east-1.amazonaws.com/freshbox-frontend` | ✅ |
+| freshbox-get-products | `334767299218.dkr.ecr.us-east-1.amazonaws.com/freshbox-get-products` | ✅ |
+| freshbox-create-product | `334767299218.dkr.ecr.us-east-1.amazonaws.com/freshbox-create-product` | ✅ |
+| freshbox-update-product | `334767299218.dkr.ecr.us-east-1.amazonaws.com/freshbox-update-product` | ✅ |
+| freshbox-delete-product | `334767299218.dkr.ecr.us-east-1.amazonaws.com/freshbox-delete-product` | ✅ |
 
-**Estado:** ⬜ Pendiente
+**Nota técnica (hallazgo, punto 1.3 del informe):** CloudShell corre en `linux/amd64`; para construir imágenes `linux/arm64` (requeridas por las instancias `t4g.small`/Graviton) fue necesario:
+1. Registrar emuladores QEMU: `docker run --privileged --rm tonistiigi/binfmt --install all`
+2. Crear un builder con driver `docker-container` (el driver `docker` por defecto no detecta los emuladores registrados): `docker buildx create --name freshbox-builder --driver docker-container --use`
+3. Construir con `docker buildx build --platform linux/arm64 --load ...` en vez de `docker build`
+
+**Estado:** ✅ Completo — 5/5 imágenes en ECR
 
 ---
 
