@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  FreshBox SpA - EP1 ARY1102 - AWS Backup para la capa de datos.
+  Crea un Backup Vault, un Backup Plan con regla diaria (retencion 7
+  dias) y una Backup Selection que apunta a la instancia EC2 MySQL,
+  cubriendo el requisito de "Respaldo / AWS Backup / Recuperacion en
+  zona AZ1b" de la arquitectura TO-BE del caso.
+
+  IMPORTANTE (AWS Academy Learner Lab):
+  AWS Backup necesita un rol IAM que pueda ser asumido por el servicio
+  backup.amazonaws.com para ejecutar los respaldos. En Academy Lab NO
+  se pueden crear roles IAM nuevos, por lo que este template reutiliza
+  el rol preexistente LabRole. Si el despliegue falla con un error de
+  tipo "Cannot assume role" / "not authorized to perform:
+  iam:PassRole", significa que la trust policy de LabRole no admite a
+  backup.amazonaws.com. En ese caso, ver el PLAN B documentado en
+  notas/bitacora.md (snapshots EBS manuales via CLI, que no requieren
+  rol de servicio).
+
+Parameters:
+  ComputeStackName:
+    Type: String
+    Default: freshbox-compute
+    Description: Stack de computo del cual se importa el InstanceId de MySQL.
+
+  BackupRoleArn:
+    Type: String
+    Default: ""
+    Description: >
+      ARN del rol IAM que AWS Backup usara. Dejar vacio para construir
+      automaticamente el ARN de LabRole en esta cuenta.
+
+  RetentionDays:
+    Type: Number
+    Default: 7
+    Description: Dias de retencion de los puntos de recuperacion.
+
+Conditions:
+  UseLabRole: !Equals [!Ref BackupRoleArn, ""]
+
+Resources:
+
+  BackupVault:
+    Type: AWS::Backup::BackupVault
+    Properties:
+      BackupVaultName: freshbox-backup-vault
+      BackupVaultTags:
+        Name: freshbox-backup-vault
+        Proyecto: FreshBox-EP1
+
+  BackupPlan:
+    Type: AWS::Backup::BackupPlan
+    Properties:
+      BackupPlan:
+        BackupPlanName: freshbox-backup-plan-mysql
+        BackupPlanRule:
+          - RuleName: respaldo-diario-mysql
+            TargetBackupVault: !Ref BackupVault
+            # 03:00 UTC todos los dias (fuera de horario peak en Chile)
+            ScheduleExpression: "cron(0 3 * * ? *)"
+            StartWindowMinutes: 60
+            CompletionWindowMinutes: 180
+            Lifecycle:
+              DeleteAfterDays: !Ref RetentionDays
+            RecoveryPointTags:
+              Proyecto: FreshBox-EP1
+              Capa: Data
+      BackupPlanTags:
+        Name: freshbox-backup-plan-mysql
+        Proyecto: FreshBox-EP1
+
+  BackupSelection:
+    Type: AWS::Backup::BackupSelection
+    Properties:
+      BackupPlanId: !Ref BackupPlan
+      BackupSelection:
+        SelectionName: seleccion-ec2-mysql
+        IamRoleArn: !If
+          - UseLabRole
+          - !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+          - !Ref BackupRoleArn
+        Resources:
+          - !Sub
+            - "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/${InstanceId}"
+            - InstanceId:
+                Fn::ImportValue: !Sub "${ComputeStackName}-MySQLInstanceId"
+
+Outputs:
+  BackupVaultName:
+    Value: !Ref BackupVault
+    Export:
+      Name: !Sub "${AWS::StackName}-BackupVaultName"
+
+  BackupPlanId:
+    Value: !Ref BackupPlan
+    Export:
+      Name: !Sub "${AWS::StackName}-BackupPlanId"
+
+  BackupRoleUsed:
+    Value: !If
+      - UseLabRole
+      - !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      - !Ref BackupRoleArn
