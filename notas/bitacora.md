@@ -28,7 +28,7 @@
 1. **Informe técnico** — secciones 1.1 a 1.7 + Portada, Índice, Introducción, Conclusiones, Bibliografía APA v7 (máx. 20 págs, PDF/Word)
 2. **Presentación PowerPoint** + guion de demo en vivo (10 min)
 3. **Ensayo de redespliegue completo** — ver §10 (runbook); crítico porque el Lab borra recursos al expirar
-4. *(Opcional)* Capturas de evidencia de AWS Backup en la consola → `evidencias/08-aws-backup/`
+*(Evidencia de AWS Backup ya capturada y organizada en `evidencias/08-aws-backup/`.)*
 
 ### 📌 Datos clave para citar en el informe/presentación
 - **Cuenta AWS:** `334767299218` · **Región:** `us-east-1`
@@ -303,7 +303,9 @@ Secuencia completa capturada en `evidencias/07-validacion-crud/`:
 | Selection | `seleccion-ec2-mysql` → instancia `i-096324afebf1a0539` |
 | Rol IAM usado | `arn:aws:iam::334767299218:role/LabRole` |
 
-**Estado:** ✅ `CREATE_COMPLETE`, sin eventos fallidos.
+**Estado:** ✅ `CREATE_COMPLETE`, sin eventos fallidos. · **Evidencia:** `evidencias/08-aws-backup/` (2 capturas: regla del plan y asignación del recurso)
+
+**Verificado en consola:** el `Resource ID` de la asignación es `arn:aws:ec2:us-east-1:334767299218:instance/i-096324afebf1a0539`, coincidente con la instancia MySQL documentada en §4.
 
 ### Nota técnica relevante (decisión + riesgo que no se materializó)
 AWS Backup requiere un rol IAM asumible por el servicio `backup.amazonaws.com` para el `BackupSelection`. Como Academy Lab **no permite crear roles IAM nuevos**, el template reutiliza el rol preexistente `LabRole`. Existía el riesgo de que su *trust policy* no admitiera a `backup.amazonaws.com` — **se verificó que sí lo admite**, por lo que el despliegue funcionó sin necesidad de alternativas.
@@ -446,6 +448,7 @@ aws cloudformation delete-stack --stack-name freshbox-red
 | `05-ecr/` (2) | 5 repositorios + imágenes con `latest` | 12 (10%) |
 | `06-alb-targetgroup/` (3) | ALB, Target Group, 2 targets healthy | 11, 12 |
 | `07-validacion-crud/` (5) | CRUD completo en el frontend web | 12 (10%) |
+| `08-aws-backup/` (2) | Plan de respaldo diario (retención 7 días) + asignación del recurso a la EC2 MySQL | 7 (10%) · pilar Fiabilidad |
 | `diagramas/diagrama-arquitectura-tobe.png` | Diagrama TO-BE 3 capas | **10 (15%)** |
 
 **Cobertura técnica lograda: indicadores 10 + 11 + 12 = 40% del EP1**, con evidencia verificable.
