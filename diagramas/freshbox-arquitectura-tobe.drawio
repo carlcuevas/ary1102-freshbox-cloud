@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2026-09-19T01:00:00.000Z" agent="FreshBox-EP1" version="24.0.0" type="device">
+<mxfile host="app.diagrams.net" modified="2026-09-19T02:00:00.000Z" agent="FreshBox-EP1" version="24.0.0" type="device">
   <diagram name="FreshBox-Arquitectura-TOBE" id="freshbox-diagram-1">
-    <mxGraphModel dx="1900" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1980" pageHeight="1150" math="0" shadow="0">
+    <mxGraphModel dx="1900" dy="1300" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1980" pageHeight="1300" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -17,7 +17,7 @@
 
         <!-- VPC container -->
         <mxCell id="vpc" value="VPC: freshbox-vpc | 10.0.0.0/22 | Region: us-east-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#248814;dashed=1;dashPattern=8 4;verticalAlign=top;align=left;spacingLeft=12;spacingTop=8;fontSize=14;fontStyle=1;fontColor=#248814;" vertex="1" parent="1">
-          <mxGeometry x="60" y="160" width="1500" height="850" as="geometry" />
+          <mxGeometry x="60" y="160" width="1500" height="1080" as="geometry" />
         </mxCell>
 
         <!-- ============ CAPA 1 - WEB ============ -->
@@ -25,144 +25,149 @@
           <mxGeometry x="90" y="200" width="1440" height="32" as="geometry" />
         </mxCell>
         <mxCell id="l1content" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8F4FA;strokeColor=#147EBA;" vertex="1" parent="1">
-          <mxGeometry x="90" y="240" width="1440" height="190" as="geometry" />
+          <mxGeometry x="90" y="232" width="1440" height="270" as="geometry" />
         </mxCell>
 
-        <!-- Iconos compartidos capa web -->
+        <!-- Fila 1 (dentro de capa1): iconos IGW, NAT, ALB -->
         <mxCell id="igw" value="freshbox-igw" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.internet_gateway;" vertex="1" parent="1">
           <mxGeometry x="150" y="252" width="60" height="60" as="geometry" />
         </mxCell>
 
         <mxCell id="natgw" value="freshbox-natgw&#10;EIP: 100.27.78.176" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.nat_gateway;" vertex="1" parent="1">
-          <mxGeometry x="280" y="252" width="60" height="60" as="geometry" />
+          <mxGeometry x="290" y="252" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="natnote" value="egress controlado para subredes privadas (App + Data)" style="text;html=1;fontSize=9;align=left;verticalAlign=middle;fontColor=#666666;fontStyle=2;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="360" y="270" width="230" height="30" as="geometry" />
         </mxCell>
 
         <mxCell id="alb" value="freshbox-alb&#10;Application Load Balancer" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.application_load_balancer;" vertex="1" parent="1">
           <mxGeometry x="700" y="248" width="70" height="70" as="geometry" />
         </mxCell>
 
-        <!-- Badge SG-alb -->
+        <!-- Fila 2 (dentro de capa1): badge SG-alb, con su propia fila, y bien separada -->
         <mxCell id="sgalb-badge" value="SG" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B85450;strokeWidth=2;fontColor=#B85450;fontSize=9;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="610" y="323" width="22" height="22" as="geometry" />
+          <mxGeometry x="640" y="360" width="22" height="22" as="geometry" />
         </mxCell>
         <mxCell id="sgalb-text" value="SG-alb: 80/443 desde 0.0.0.0/0" style="text;html=1;fontSize=11;align=left;verticalAlign=middle;fontColor=#B85450;" vertex="1" parent="1">
-          <mxGeometry x="638" y="322" width="240" height="24" as="geometry" />
+          <mxGeometry x="668" y="359" width="260" height="24" as="geometry" />
         </mxCell>
 
-        <!-- Subredes web (solo contexto CIDR/AZ) -->
+        <!-- Fila 3 (dentro de capa1): subredes web, en la parte inferior de la capa, sin cruce con nada -->
         <mxCell id="subweb1a" value="freshbox-sub-web-1a&#10;10.0.0.0/26 | us-east-1a" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;dashed=1;verticalAlign=middle;align=center;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="120" y="340" width="650" height="70" as="geometry" />
+          <mxGeometry x="120" y="420" width="650" height="65" as="geometry" />
         </mxCell>
         <mxCell id="subweb1b" value="freshbox-sub-web-1b&#10;10.0.0.64/26 | us-east-1b" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;dashed=1;verticalAlign=middle;align=center;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="830" y="340" width="650" height="70" as="geometry" />
+          <mxGeometry x="830" y="420" width="650" height="65" as="geometry" />
         </mxCell>
 
-        <!-- Nota con DNS real del ALB (panel derecho) -->
+        <!-- Nota con DNS real del ALB (panel derecho, fuera de la VPC) -->
         <mxCell id="albinfo" value="Dato real (verificado):&#10;DNS del ALB =&#10;freshbox-alb-933788468.&#10;us-east-1.elb.amazonaws.com" style="text;html=1;fontSize=10;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#8C4FFF;rounded=0;spacingLeft=6;spacingTop=6;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="1620" y="200" width="330" height="90" as="geometry" />
+          <mxGeometry x="1620" y="240" width="330" height="90" as="geometry" />
         </mxCell>
 
         <!-- ============ CAPA 2 - APP ============ -->
         <mxCell id="l2title" value="CAPA 2 - APP (Subred Privada)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D6B656;strokeColor=#8C7223;fontColor=#232F3E;verticalAlign=middle;align=left;spacingLeft=12;fontSize=13;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="90" y="470" width="1440" height="32" as="geometry" />
+          <mxGeometry x="90" y="552" width="1440" height="32" as="geometry" />
         </mxCell>
         <mxCell id="l2content" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;" vertex="1" parent="1">
-          <mxGeometry x="90" y="510" width="1440" height="190" as="geometry" />
+          <mxGeometry x="90" y="584" width="1440" height="290" as="geometry" />
         </mxCell>
 
+        <!-- ASG box envolviendo solo los recuadros de subred App -->
         <mxCell id="asgbox" value="Auto Scaling Group: freshbox-asg-app (min 2 / max 4)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#0066CC;dashed=1;dashPattern=6 3;verticalAlign=top;align=right;spacingRight=12;spacingTop=6;fontSize=11;fontStyle=1;fontColor=#0066CC;" vertex="1" parent="1">
-          <mxGeometry x="105" y="518" width="1410" height="172" as="geometry" />
+          <mxGeometry x="105" y="598" width="1410" height="190" as="geometry" />
         </mxCell>
 
-        <mxCell id="subapp1a" value="freshbox-sub-app-1a&#10;10.0.0.128/26 | us-east-1a" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;verticalAlign=top;align=center;spacingTop=8;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="120" y="530" width="650" height="150" as="geometry" />
+        <mxCell id="subapp1a" value="freshbox-sub-app-1a | 10.0.0.128/26 | us-east-1a" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;verticalAlign=top;align=center;spacingTop=8;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="120" y="610" width="650" height="165" as="geometry" />
         </mxCell>
-        <mxCell id="subapp1b" value="freshbox-sub-app-1b&#10;10.0.0.192/26 | us-east-1b" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;verticalAlign=top;align=center;spacingTop=8;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="830" y="530" width="650" height="150" as="geometry" />
-        </mxCell>
-
-        <mxCell id="ec2app1" value="EC2 App (t4g.small)&#10;5 contenedores Docker" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#ED7100;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.instance2;" vertex="1" parent="1">
-          <mxGeometry x="410" y="562" width="70" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="ec2app1-cont" value="frontend | get-products | create-product | update-product | delete-product" style="text;html=1;fontSize=9;align=center;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="335" y="638" width="220" height="30" as="geometry" />
+        <mxCell id="subapp1b" value="freshbox-sub-app-1b | 10.0.0.192/26 | us-east-1b" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;verticalAlign=top;align=center;spacingTop=8;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="830" y="610" width="650" height="165" as="geometry" />
         </mxCell>
 
-        <mxCell id="ec2app2" value="EC2 App (t4g.small)&#10;5 contenedores Docker" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#ED7100;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.instance2;" vertex="1" parent="1">
-          <mxGeometry x="1120" y="562" width="70" height="70" as="geometry" />
+        <mxCell id="ec2app1" value="EC2 App (t4g.small)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#ED7100;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.instance2;" vertex="1" parent="1">
+          <mxGeometry x="410" y="638" width="70" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="ec2app2-cont" value="frontend | get-products | create-product | update-product | delete-product" style="text;html=1;fontSize=9;align=center;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="1045" y="638" width="220" height="30" as="geometry" />
+        <mxCell id="ec2app1-cont" value="5 contenedores:&#10;frontend, get-products, create-product,&#10;update-product, delete-product" style="text;html=1;fontSize=9;align=center;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="320" y="714" width="250" height="50" as="geometry" />
         </mxCell>
 
-        <!-- Badge SG-app -->
+        <mxCell id="ec2app2" value="EC2 App (t4g.small)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#ED7100;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.instance2;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="638" width="70" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ec2app2-cont" value="5 contenedores:&#10;frontend, get-products, create-product,&#10;update-product, delete-product" style="text;html=1;fontSize=9;align=center;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="714" width="250" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Badge SG-app, en fila propia debajo del ASG box, sin cruzar nada -->
         <mxCell id="sgapp-badge" value="SG" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B85450;strokeWidth=2;fontColor=#B85450;fontSize=9;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="700" y="672" width="22" height="22" as="geometry" />
+          <mxGeometry x="700" y="825" width="22" height="22" as="geometry" />
         </mxCell>
         <mxCell id="sgapp-text" value="SG-app: 80/443 desde SG-alb" style="text;html=1;fontSize=10;align=left;verticalAlign=middle;fontColor=#B85450;" vertex="1" parent="1">
-          <mxGeometry x="726" y="671" width="220" height="24" as="geometry" />
+          <mxGeometry x="728" y="824" width="240" height="24" as="geometry" />
         </mxCell>
 
         <!-- Amazon ECR (panel derecho, alineado con capa App) -->
         <mxCell id="ecr" value="Amazon ECR&#10;5 repositorios freshbox-*" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#ED7100;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elastic_container_registry;" vertex="1" parent="1">
-          <mxGeometry x="1655" y="562" width="70" height="70" as="geometry" />
+          <mxGeometry x="1655" y="638" width="70" height="70" as="geometry" />
         </mxCell>
 
         <!-- ============ CAPA 3 - DATA ============ -->
         <mxCell id="l3title" value="CAPA 3 - DATA (Subred Privada)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#B85450;strokeColor=#7A3936;fontColor=#FFFFFF;verticalAlign=middle;align=left;spacingLeft=12;fontSize=13;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="90" y="740" width="1440" height="32" as="geometry" />
+          <mxGeometry x="90" y="924" width="1440" height="32" as="geometry" />
         </mxCell>
         <mxCell id="l3content" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;" vertex="1" parent="1">
-          <mxGeometry x="90" y="780" width="1440" height="190" as="geometry" />
+          <mxGeometry x="90" y="956" width="1440" height="260" as="geometry" />
         </mxCell>
 
-        <mxCell id="subdata1a" value="freshbox-sub-data-1a&#10;10.0.1.0/26 | us-east-1a" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;verticalAlign=top;align=center;spacingTop=8;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="120" y="800" width="650" height="150" as="geometry" />
+        <mxCell id="subdata1a" value="freshbox-sub-data-1a | 10.0.1.0/26 | us-east-1a" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;verticalAlign=top;align=center;spacingTop=8;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="120" y="970" width="650" height="160" as="geometry" />
         </mxCell>
-        <mxCell id="subdata1b" value="freshbox-sub-data-1b&#10;10.0.1.64/26 | us-east-1b&#10;(zona standby / recuperacion AWS Backup)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;verticalAlign=top;align=center;spacingTop=8;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="830" y="800" width="650" height="150" as="geometry" />
+        <mxCell id="subdata1b" value="freshbox-sub-data-1b | 10.0.1.64/26 | us-east-1b&#10;(zona standby / recuperacion AWS Backup)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;verticalAlign=top;align=center;spacingTop=8;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="830" y="970" width="650" height="160" as="geometry" />
         </mxCell>
 
         <mxCell id="ec2mysql" value="EC2 MySQL/MariaDB (t4g.small)&#10;IP: 10.0.1.43 | EBS cifrado" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#3B48CC;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.instance2;" vertex="1" parent="1">
-          <mxGeometry x="410" y="832" width="70" height="70" as="geometry" />
+          <mxGeometry x="410" y="1000" width="70" height="70" as="geometry" />
         </mxCell>
 
-        <!-- Badge SG-bd -->
+        <!-- Badge SG-bd, fila propia bien separada del icono -->
         <mxCell id="sgbd-badge" value="SG" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B85450;strokeWidth=2;fontColor=#B85450;fontSize=9;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="300" y="920" width="22" height="22" as="geometry" />
+          <mxGeometry x="300" y="1098" width="22" height="22" as="geometry" />
         </mxCell>
         <mxCell id="sgbd-text" value="SG-bd: 3306 desde SG-app" style="text;html=1;fontSize=10;align=left;verticalAlign=middle;fontColor=#B85450;" vertex="1" parent="1">
-          <mxGeometry x="326" y="919" width="220" height="24" as="geometry" />
+          <mxGeometry x="328" y="1097" width="230" height="24" as="geometry" />
         </mxCell>
 
         <!-- AWS Backup (panel derecho, alineado con capa Data) -->
-        <mxCell id="backup" value="AWS Backup&#10;Plan diario, retencion 7 dias" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#3F8624;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.backup;" vertex="1" parent="1">
-          <mxGeometry x="1655" y="832" width="70" height="70" as="geometry" />
+        <mxCell id="backup" value="AWS Backup&#10;Plan diario | retencion 7 dias" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#3F8624;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.backup;" vertex="1" parent="1">
+          <mxGeometry x="1655" y="1000" width="70" height="70" as="geometry" />
         </mxCell>
 
-        <!-- Leyenda (con buffer generoso respecto a Backup) -->
-        <mxCell id="leyenda" value="Leyenda:&#10;-&gt; Flujo de datos de la aplicacion (linea solida azul)&#10;--&gt; Flujo de gestion / infraestructura (linea punteada gris)&#10;(SG) = regla de Security Group asociada" style="text;html=1;fontSize=11;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#666666;rounded=0;spacingLeft=6;spacingTop=6;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="1620" y="960" width="360" height="80" as="geometry" />
+        <!-- Leyenda: muy por debajo del icono de Backup, con amplio margen -->
+        <mxCell id="leyenda" value="Leyenda:&#10;&#8594; Flujo de datos de la aplicacion (linea solida azul)&#10;- - &gt; Flujo de gestion / infraestructura (linea punteada gris)&#10;(SG) = regla de Security Group asociada al recurso" style="text;html=1;fontSize=11;align=left;verticalAlign=top;fillColor=#FFFFFF;strokeColor=#666666;rounded=0;spacingLeft=8;spacingTop=8;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1620" y="1130" width="360" height="80" as="geometry" />
         </mxCell>
 
-        <!-- ============ FLECHAS ============ -->
+        <!-- ============ FLECHAS (todas cortas, dentro de la misma zona vertical, sin cruzar capas) ============ -->
         <mxCell id="e1" value="80/443" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;strokeColor=#1A73E8;strokeWidth=2;" edge="1" parent="1" source="internet" target="alb">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="e2" value="80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;strokeColor=#1A73E8;strokeWidth=2;" edge="1" parent="1" source="alb" target="ec2app1">
+        <mxCell id="e2" value="80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;strokeColor=#1A73E8;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="alb" target="ec2app1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="e3" value="80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;strokeColor=#1A73E8;strokeWidth=2;" edge="1" parent="1" source="alb" target="ec2app2">
+        <mxCell id="e3" value="80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;strokeColor=#1A73E8;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="alb" target="ec2app2">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="e4" value="3306" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;strokeColor=#1A73E8;strokeWidth=2;" edge="1" parent="1" source="ec2app1" target="ec2mysql">
+        <mxCell id="e4" value="3306" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;strokeColor=#1A73E8;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.3;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="ec2app1" target="ec2mysql">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="e5" value="3306" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;strokeColor=#1A73E8;strokeWidth=2;" edge="1" parent="1" source="ec2app2" target="ec2mysql">
+        <mxCell id="e5" value="3306" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;strokeColor=#1A73E8;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.7;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="ec2app2" target="ec2mysql">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
@@ -171,14 +176,6 @@
         </mxCell>
 
         <mxCell id="e7" value="backup diario" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;fontSize=10;strokeColor=#666666;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="ec2mysql" target="backup">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <mxCell id="e8" value="salida a internet&#10;(ambas instancias)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;fontSize=9;strokeColor=#666666;" edge="1" parent="1" source="ec2app1" target="natgw">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <mxCell id="e9" value="trafico saliente" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;fontSize=9;strokeColor=#666666;" edge="1" parent="1" source="natgw" target="igw">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
