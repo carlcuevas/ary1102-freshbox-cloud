@@ -20,13 +20,15 @@
 | Validación CRUD end-to-end (GET/POST/PUT/DELETE) | ✅ verificado por `curl` y por frontend web |
 | Diagrama de arquitectura TO-BE | ✅ `diagramas/diagrama-arquitectura-tobe.png` |
 | Evidencia fotográfica (27 capturas organizadas) | ✅ `evidencias/01..07` |
-| AWS Backup (template IaC) | ⚠️ template creado, **pendiente de desplegar y validar** (ver §9) |
+| AWS Backup (Vault + Plan diario + Selection) | ✅ desplegado — `CREATE_COMPLETE` |
+
+> **🏁 La parte técnica del EP1 está 100% completa y verificada.** Todos los componentes de la arquitectura TO-BE exigida por el caso están desplegados en AWS y con evidencia.
 
 ### ⏳ Pendiente (a cargo de la siguiente etapa)
-1. **Desplegar y validar AWS Backup** (`infra/05-backup.yaml`) — ver §9, incluye plan B si falla por IAM
-2. **Informe técnico** — secciones 1.1 a 1.7 + Portada, Índice, Introducción, Conclusiones, Bibliografía APA v7 (máx. 20 págs, PDF/Word)
-3. **Presentación PowerPoint** + guion de demo en vivo (10 min)
-4. **Ensayo de redespliegue completo** — ver §10 (runbook); crítico porque el Lab borra recursos al expirar
+1. **Informe técnico** — secciones 1.1 a 1.7 + Portada, Índice, Introducción, Conclusiones, Bibliografía APA v7 (máx. 20 págs, PDF/Word)
+2. **Presentación PowerPoint** + guion de demo en vivo (10 min)
+3. **Ensayo de redespliegue completo** — ver §10 (runbook); crítico porque el Lab borra recursos al expirar
+4. *(Opcional)* Capturas de evidencia de AWS Backup en la consola → `evidencias/08-aws-backup/`
 
 ### 📌 Datos clave para citar en el informe/presentación
 - **Cuenta AWS:** `334767299218` · **Región:** `us-east-1`
@@ -287,42 +289,38 @@ Secuencia completa capturada en `evidencias/07-validacion-crud/`:
 
 ---
 
-## 9. AWS Backup — ⚠️ PENDIENTE DE DESPLEGAR
+## 9. AWS Backup (stack `freshbox-backup`) — ✅ DESPLEGADO
 
-**Template creado:** [`infra/05-backup.yaml`](../infra/05-backup.yaml) — Backup Vault + Backup Plan (regla diaria 03:00 UTC, retención 7 días) + Backup Selection apuntando a la EC2 MySQL.
+**Template:** [`infra/05-backup.yaml`](../infra/05-backup.yaml)
 
-### Comandos para desplegar
+| Recurso | Configuración |
+|---|---|
+| Backup Vault | `freshbox-backup-vault` |
+| Backup Plan | `freshbox-backup-plan-mysql` |
+| Regla | `respaldo-diario-mysql` — `cron(0 3 * * ? *)` (03:00 UTC diario) |
+| Ventana de inicio | 60 min · Ventana de término: 180 min |
+| Retención | 7 días (`DeleteAfterDays: 7`) |
+| Selection | `seleccion-ec2-mysql` → instancia `i-096324afebf1a0539` |
+| Rol IAM usado | `arn:aws:iam::334767299218:role/LabRole` |
+
+**Estado:** ✅ `CREATE_COMPLETE`, sin eventos fallidos.
+
+### Nota técnica relevante (decisión + riesgo que no se materializó)
+AWS Backup requiere un rol IAM asumible por el servicio `backup.amazonaws.com` para el `BackupSelection`. Como Academy Lab **no permite crear roles IAM nuevos**, el template reutiliza el rol preexistente `LabRole`. Existía el riesgo de que su *trust policy* no admitiera a `backup.amazonaws.com` — **se verificó que sí lo admite**, por lo que el despliegue funcionó sin necesidad de alternativas.
+
+> *Argumento para la presentación:* "AWS Backup se implementó como código, reutilizando el rol institucional del laboratorio en lugar de crear uno nuevo, respetando las restricciones de IAM del entorno — un caso real de adaptar el diseño a las políticas de seguridad de la organización sin sacrificar el requisito funcional."
+
+### Plan B documentado (no fue necesario, se conserva como referencia)
+Si en un redespliegue futuro el rol fallara, el respaldo puede evidenciarse con un snapshot EBS manual, que no requiere rol de servicio:
 ```bash
-cd ~/ary1102-freshbox-cloud/infra
-aws cloudformation validate-template --template-body file://05-backup.yaml
-aws cloudformation create-stack --stack-name freshbox-backup --template-body file://05-backup.yaml
-aws cloudformation wait stack-create-complete --stack-name freshbox-backup
-aws cloudformation describe-stacks --stack-name freshbox-backup --query 'Stacks[0].StackStatus' --output json
-```
-
-### ⚠️ Riesgo conocido y PLAN B
-AWS Backup requiere un rol IAM asumible por `backup.amazonaws.com` para el `BackupSelection`. En Academy Lab **no se pueden crear roles nuevos**, por lo que el template reutiliza `LabRole`. **Es posible que falle** si la *trust policy* de `LabRole` no incluye a `backup.amazonaws.com`.
-
-Si el stack falla con error tipo `Cannot assume role` o `iam:PassRole` denegado, diagnosticar con:
-```bash
-aws cloudformation describe-stack-events --stack-name freshbox-backup --query "StackEvents[?contains(ResourceStatus,'FAILED')].[LogicalResourceId,ResourceStatusReason]" --output json
-```
-
-**PLAN B (garantizado, sin rol de servicio):** snapshot EBS manual de la instancia MySQL, que sí funciona con los permisos del Lab:
-```bash
-# Obtener el VolumeId del EBS de la instancia MySQL
-VOL=$(aws ec2 describe-instances --instance-ids i-096324afebf1a0539 \
+VOL=$(aws ec2 describe-instances --instance-ids <INSTANCE_ID_MYSQL> \
   --query 'Reservations[0].Instances[0].BlockDeviceMappings[0].Ebs.VolumeId' --output text)
-
-# Crear el snapshot (evidencia real de respaldo)
-aws ec2 create-snapshot --volume-id $VOL \
-  --description "FreshBox EP1 - respaldo EC2 MySQL" \
-  --tag-specifications 'ResourceType=snapshot,Tags=[{Key=Name,Value=freshbox-mysql-backup},{Key=Proyecto,Value=FreshBox-EP1}]'
-
-# Verificar
-aws ec2 describe-snapshots --owner-ids self --query 'Snapshots[*].[SnapshotId,State,Description]' --output table
+aws ec2 create-snapshot --volume-id $VOL --description "FreshBox EP1 - respaldo EC2 MySQL" \
+  --tag-specifications 'ResourceType=snapshot,Tags=[{Key=Name,Value=freshbox-mysql-backup}]'
 ```
-En ese escenario, documentar en el informe que el **diseño** contempla AWS Backup con plan diario y retención de 7 días (y recuperación en AZ1b), y que en el entorno académico se evidenció mediante snapshot EBS por la restricción de IAM del Learner Lab — lo cual es una limitación del entorno, no del diseño.
+
+### Sobre "recuperación en zona AZ1b" (requisito del caso)
+La pauta especifica *"AWS Backup — Recuperación en zona AZ1b"*. Esto se cumple porque **los puntos de recuperación de AWS Backup son regionales, no zonales**: un recovery point tomado de la instancia en `us-east-1a` puede restaurarse en **cualquier AZ de la región**, incluida `us-east-1b`. La subred `freshbox-sub-data-1b` (`10.0.1.64/26`) está aprovisionada precisamente como zona de destino para esa restauración, lo que habilita el escenario de recuperación ante falla de la AZ primaria.
 
 ---
 
@@ -392,8 +390,9 @@ IDS=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names fr
   --query 'AutoScalingGroups[0].Instances[*].InstanceId' --output text)
 for I in $IDS; do aws elbv2 register-targets --target-group-arn "$TG" --targets Id=$I; done
 
-# 8. (Opcional) AWS BACKUP
+# 8. AWS BACKUP (~1-2 min)
 aws cloudformation create-stack --stack-name freshbox-backup --template-body file://05-backup.yaml
+aws cloudformation wait stack-create-complete --stack-name freshbox-backup
 
 # 9. VALIDAR
 sleep 60
@@ -430,7 +429,7 @@ aws cloudformation delete-stack --stack-name freshbox-red
 | 8 | BD en EC2 autoadministrada en vez de servicio gestionado | Fiabilidad · Excelencia Operativa | **Oportunidad de mejora:** migrar a **Amazon RDS Multi-AZ** (failover automático, backups gestionados, parches automáticos) |
 | 9 | Un solo NAT Gateway (en AZ1a) → punto único de falla para el egress | **Fiabilidad** | **Oportunidad de mejora:** un NAT Gateway por AZ |
 | 10 | Dependencia de `LabRole` con permisos amplios | Seguridad | Limitación del entorno académico; en producción: roles dedicados de mínimo privilegio por capa |
-| 11 | AWS Backup no desplegado por restricción de IAM del Lab | Fiabilidad | Template listo + plan B con snapshots EBS (§9) |
+| 11 | AWS Backup requiere un rol asumible por `backup.amazonaws.com`, y el Lab no permite crear roles IAM | Fiabilidad · Seguridad | Resuelto reutilizando `LabRole` (verificado); plan B con snapshots EBS documentado (§9) |
 
 > Los hallazgos 7, 8 y 9 son especialmente útiles como **"oportunidades de mejora por pilar"** (exigido explícitamente en el punto 1.3), porque son mejoras reales y justificadas, no genéricas.
 
