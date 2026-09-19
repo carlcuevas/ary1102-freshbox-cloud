@@ -17,8 +17,11 @@ Este repositorio reúne el entregable completo de la Evaluación Parcial n°1: c
 │   ├── 05-ecr/                   Repositorios ECR con las 5 imágenes Docker
 │   ├── 06-alb-targetgroup/       Application Load Balancer y Target Group (health checks)
 │   └── 07-validacion-crud/       CRUD funcionando end-to-end vía DNS del ALB
+├── infra/                       Plantillas CloudFormation (IaC) de toda la arquitectura
+├── diagramas/                   Diagrama de arquitectura TO-BE (.drawio, .xml y .png)
 ├── notas/
-│   └── bitacora.md               Registro técnico de decisiones, recursos creados e IPs/DNS relevantes
+│   ├── bitacora.md               Registro técnico: IDs reales, decisiones, hallazgos y runbook de redespliegue
+│   └── insumo-informe-y-presentacion.md   Material estructurado para redactar el informe y armar la presentación
 └── README.md
 ```
 
@@ -35,9 +38,20 @@ Este repositorio reúne el entregable completo de la Evaluación Parcial n°1: c
 - [ ] Informe técnico (secciones 1.1 a 1.7)
 - [ ] Presentación + demo en vivo
 
-## Nota
+## Documentos clave
 
-El informe técnico y la presentación se elaborarán **al final**, una vez reunida toda la evidencia en `evidencias/` y la bitácora en `notas/bitacora.md`. Esa documentación es el insumo base para redactar ambos entregables.
+| Documento | Para qué sirve |
+|---|---|
+| [`notas/bitacora.md`](notas/bitacora.md) | Bitácora técnica: IDs reales de todos los recursos, decisiones justificadas, 11 hallazgos mapeados a pilares Well-Architected, y el **runbook de redespliegue** completo |
+| [`notas/insumo-informe-y-presentacion.md`](notas/insumo-informe-y-presentacion.md) | Material estructurado e indicador por indicador para **redactar el informe técnico (1.1 a 1.7) y armar la presentación (2.1 a 2.5)** |
+
+## Estado
+
+La **parte técnica está completa y verificada**: los 16 componentes de la arquitectura TO-BE exigida por el caso están desplegados en AWS, con 29 capturas de evidencia y validación CRUD end-to-end.
+
+Pendiente: informe técnico (PDF/Word, máx. 20 págs), presentación PowerPoint y ensayo de redespliegue.
+
+⚠️ **AWS Academy Learner Lab elimina los recursos al expirar.** Si eso ocurre, el runbook de `notas/bitacora.md` §10 recrea todo en ~15-20 minutos — pero los IDs y el DNS del ALB cambiarán.
 
 ---
 2026 - FreshBox SpA / DuocUC ARY1102
