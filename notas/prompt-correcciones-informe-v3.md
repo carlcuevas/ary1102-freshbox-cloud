@@ -48,6 +48,16 @@ Revisa que las cuatro menciones al reemplazo (1.1, 1.2, 1.3 y 1.7) cuenten la mi
 
 En el pilar Seguridad de 1.2 dice "freshbox-sg-alb recibe tráfico público en 80/443". Aclara ahí mismo que el Security Group permite 443 pero el ALB solo tiene listener HTTP:80, para que no parezca una contradicción con la brecha declarada en 1.3 y 1.7.
 
+### 7. Barrido final antes de entregar
+
+Antes de dar el documento por terminado, recórrelo completo y verifica:
+
+- No queda ningún marcador interno visible: `[PENDIENTE`, `<<`, `>>`, corchetes con instrucciones, texto resaltado en amarillo, ni notas dirigidas al autor o al redactor.
+- Todas las figuras tienen pie numerado y al menos una referencia desde el texto.
+- La estructura está completa y en orden: Portada · Índice · Introducción · 1.1 a 1.7 · Conclusiones · Bibliografía.
+- Cada entrada de la bibliografía está citada en el texto, y cada cita tiene su entrada.
+- El documento es un archivo único, listo para exportar a PDF, de máximo 20 páginas.
+
 ---
 
 ### Restricciones
