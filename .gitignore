@@ -1,3 +1,15 @@
-
 # Material de trabajo personal, no publicado
 /_privado/
+
+# Artefactos de maquetación del informe
+~$*.docx
+*.tmp
+
+# Dependencias de los microservicios (se instalan en el build de la imagen)
+node_modules/
+npm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
