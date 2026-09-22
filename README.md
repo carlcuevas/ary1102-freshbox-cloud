@@ -74,13 +74,19 @@ Servicios de soporte: **Amazon ECR** (5 repositorios de imágenes ARM64), **NAT 
 
 ## Reproducir el despliegue
 
-La infraestructura completa se recrea desde cero en unos 15-20 minutos ejecutando las plantillas en orden. El procedimiento detallado, con parámetros, verificaciones y desmontaje, está en **[`infra/README.md`](infra/README.md)**; la versión con los comandos exactos usados en el despliegue original está en la sección §10 de [`notas/bitacora.md`](notas/bitacora.md).
+La infraestructura completa se recrea desde cero en unos 15-20 minutos con un solo script:
 
 ```bash
 git clone https://github.com/carlcuevas/ary1102-freshbox-cloud.git
 cd ary1102-freshbox-cloud/infra
-# 1) red → 2) security groups → 3) imágenes a ECR → 4) compute → 5) ALB → 6) backup
+
+./deploy.sh              # VPC, SGs, imágenes ARM64 en ECR, cómputo, ALB y respaldo
+./verify.sh --esperar    # comprueba stacks, targets healthy y el catálogo por el ALB
+./demo.sh todo           # recorrido de demostración: red, seguridad, HA, CRUD
+./teardown.sh            # elimina todo en orden inverso
 ```
+
+Los scripts filtran los recursos por nombre y no por identificador, así que funcionan igual después de cada redespliegue. El detalle de cada paso, los parámetros de las plantillas y el procedimiento manual equivalente están en **[`infra/README.md`](infra/README.md)**; los comandos exactos del despliegue original, en la sección §10 de [`notas/bitacora.md`](notas/bitacora.md).
 
 Para probar la aplicación en local, sin AWS: `cd codigo && docker compose up -d`.
 

@@ -16,6 +16,31 @@ Todos los recursos usan el prefijo `freshbox-`. Un redespliegue completo toma en
 
 Entre los pasos 2 y 3 hay que publicar las **imágenes Docker en Amazon ECR**: el UserData del Launch Template hace `docker pull` durante el arranque, de modo que las imágenes deben existir antes de crear el stack de cómputo. El procedimiento está en [`../codigo/README.md`](../codigo/README.md) y en la sección §10 de [`../notas/bitacora.md`](../notas/bitacora.md).
 
+## Scripts
+
+Los cuatro scripts de este directorio automatizan el ciclo completo. Están escritos para AWS CloudShell y filtran los recursos **por nombre**, no por identificador, así que siguen funcionando después de un redespliegue.
+
+| Script | Qué hace |
+|---|---|
+| [`deploy.sh`](deploy.sh) | Despliega todo de punta a punta: los 5 stacks en orden, el build ARM64 y el push a ECR, la conexión del ASG con el Target Group y el registro de las instancias. Omite los stacks que ya existen, así que se puede reejecutar |
+| [`verify.sh`](verify.sh) | Comprueba los 5 stacks, la salud de los targets y que el catálogo responda por el balanceador. Sale con código 0 si todo está arriba |
+| [`demo.sh`](demo.sh) | Recorrido de demostración en vivo, por bloques: red, seguridad, alta disponibilidad, contenedores, CRUD y respaldo. Imprime cada comando antes de ejecutarlo |
+| [`teardown.sh`](teardown.sh) | Elimina los 5 stacks en orden inverso. Conserva los repositorios de ECR para no repetir el build |
+
+```bash
+git clone https://github.com/carlcuevas/ary1102-freshbox-cloud.git
+cd ary1102-freshbox-cloud/infra
+
+./deploy.sh                 # infraestructura completa, ~15-20 min
+./verify.sh --esperar       # reintenta mientras los contenedores levantan
+./demo.sh todo              # recorrido de demostración
+./teardown.sh               # eliminar todo
+```
+
+Si los repositorios de ECR ya tienen las imágenes, `./deploy.sh --sin-imagenes` se salta el build —que es el paso más lento, entre 8 y 10 minutos por la emulación ARM64— y baja el despliegue a 6-8 minutos.
+
+El resto de esta guía documenta el procedimiento manual equivalente, útil para entender qué hace cada paso o para intervenir cuando algo falla.
+
 ## Parámetros
 
 Todas las plantillas traen valores por defecto funcionales; en un despliegue limpio no hace falta pasar ningún parámetro salvo los dos casos señalados.
