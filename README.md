@@ -37,6 +37,7 @@ Servicios de soporte: **Amazon ECR** (5 repositorios de imágenes ARM64), **NAT 
 |---|---|
 | **[`informe/Informe-EP1-FreshBox-Carlos-Cuevas.pdf`](informe/Informe-EP1-FreshBox-Carlos-Cuevas.pdf)** | Informe técnico entregado: 20 páginas, puntos 1.1 a 1.7, 9 figuras y bibliografía APA v7 |
 | [`informe/informe-ep1-freshbox.md`](informe/informe-ep1-freshbox.md) | Fuente versionada del informe, con el mismo contenido que el PDF |
+| **[`presentacion/Presentacion-EP1-FreshBox.pptx`](presentacion/Presentacion-EP1-FreshBox.pptx)** | Presentación de defensa: 13 diapositivas de exposición más 3 anexos, con notas del orador y guion de demo |
 | [`notas/bitacora.md`](notas/bitacora.md) | Bitácora técnica: identificadores reales de cada recurso, decisiones justificadas, 11 hallazgos mapeados a los pilares Well-Architected y el runbook de redespliegue |
 | [`infra/`](infra/) | Las 5 plantillas CloudFormation de toda la arquitectura — ver [`infra/README.md`](infra/README.md) |
 | [`codigo/`](codigo/) | Frontend + 4 microservicios Node.js + scripts de despliegue — ver [`codigo/README.md`](codigo/README.md) |
@@ -64,6 +65,7 @@ Servicios de soporte: **Amazon ECR** (5 repositorios de imágenes ARM64), **NAT 
 ├── evidencias/                Capturas de la consola AWS, por etapa del despliegue
 ├── diagramas/                 Diagrama de arquitectura TO-BE
 ├── informe/                   Informe técnico (PDF entregado + fuente Markdown)
+├── presentacion/              Presentación de defensa (PowerPoint con notas del orador)
 ├── notas/bitacora.md          Bitácora técnica y runbook de redespliegue
 └── herramientas/              Utilidad para recortar capturas (stdlib, sin dependencias)
 ```
