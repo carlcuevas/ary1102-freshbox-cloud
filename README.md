@@ -8,6 +8,55 @@ El alcance de esta etapa es el **catálogo administrable de productos**. El carr
 
 ---
 
+## Desplegar
+
+Desde **AWS CloudShell**, con el laboratorio activo. Una línea, sin clonar nada a mano:
+
+```bash
+curl -sL https://raw.githubusercontent.com/carlcuevas/ary1102-freshbox-cloud/main/bootstrap.sh | bash
+```
+
+Eso clona el repositorio y levanta la arquitectura completa: los 5 stacks de CloudFormation, las 5 imágenes Docker compiladas para ARM64 y publicadas en Amazon ECR, el Auto Scaling Group conectado al balanceador y el respaldo diario configurado. Termina imprimiendo el DNS público del catálogo. Toma unos 18 minutos y no requiere interacción.
+
+Si prefieres clonar primero:
+
+```bash
+git clone https://github.com/carlcuevas/ary1102-freshbox-cloud.git
+cd ary1102-freshbox-cloud
+./up.sh
+```
+
+El resto del ciclo de vida:
+
+| Comando | Qué hace |
+|---|---|
+| `./up.sh` | Despliega todo y verifica que quede operativo (~18 min) |
+| `./up.sh --sin-imagenes` | Igual, pero reutiliza las imágenes ya publicadas en ECR (~7 min) |
+| `./infra/verify.sh` | Comprueba stacks, targets *healthy* y que el catálogo responda |
+| `./infra/demo.sh todo` | Recorrido de demostración: red, seguridad, alta disponibilidad, contenedores, CRUD |
+| `./infra/teardown.sh` | Elimina toda la infraestructura |
+
+Con `make` disponible: `make up`, `make check`, `make demo`, `make down`, y `make local` para levantar la aplicación en Docker Compose sin tocar AWS. `make help` lista todo.
+
+Los scripts resuelven cada recurso **por nombre y no por identificador**, así que funcionan igual después de cada redespliegue: el laboratorio académico borra los recursos al expirar y los IDs cambian, los nombres lógicos no.
+
+---
+
+## Dónde está cada cosa
+
+| Si buscas | Ve a |
+|---|---|
+| **El informe entregado** — 20 páginas, puntos 1.1 a 1.7, 9 figuras, bibliografía APA v7 | [`informe/Informe-EP1-FreshBox-Carlos-Cuevas.pdf`](informe/Informe-EP1-FreshBox-Carlos-Cuevas.pdf) |
+| **La presentación de defensa** — 13 diapositivas más 3 anexos, con notas del orador | [`presentacion/`](presentacion/) |
+| **Cómo se despliega, paso a paso** — plantillas, parámetros, verificación y desmontaje | [`infra/README.md`](infra/README.md) |
+| **La evidencia del despliegue** — 29 capturas de la consola AWS, por etapa | [`evidencias/README.md`](evidencias/README.md) |
+| **La aplicación y cómo correrla en local** — frontend y 4 microservicios | [`codigo/README.md`](codigo/README.md) |
+| **Decisiones, hallazgos y runbook** — identificadores reales y 11 hallazgos por pilar | [`notas/bitacora.md`](notas/bitacora.md) |
+| **El diagrama de arquitectura** — editable en `.drawio` | [`diagramas/`](diagramas/) |
+| La fuente versionada del informe, en Markdown | [`informe/informe-ep1-freshbox.md`](informe/informe-ep1-freshbox.md) |
+
+---
+
 ## Arquitectura implementada
 
 ![Arquitectura TO-BE](diagramas/diagrama-arquitectura-tobe.png)
@@ -31,25 +80,11 @@ Servicios de soporte: **Amazon ECR** (5 repositorios de imágenes ARM64), **NAT 
 
 ---
 
-## Entregables
-
-| Documento | Contenido |
-|---|---|
-| **[`informe/Informe-EP1-FreshBox-Carlos-Cuevas.pdf`](informe/Informe-EP1-FreshBox-Carlos-Cuevas.pdf)** | Informe técnico entregado: 20 páginas, puntos 1.1 a 1.7, 9 figuras y bibliografía APA v7 |
-| [`informe/informe-ep1-freshbox.md`](informe/informe-ep1-freshbox.md) | Fuente versionada del informe, con el mismo contenido que el PDF |
-| **[`presentacion/Presentacion-EP1-FreshBox.pptx`](presentacion/Presentacion-EP1-FreshBox.pptx)** | Presentación de defensa: 13 diapositivas de exposición más 3 anexos, con notas del orador y guion de demo |
-| [`notas/bitacora.md`](notas/bitacora.md) | Bitácora técnica: identificadores reales de cada recurso, decisiones justificadas, 11 hallazgos mapeados a los pilares Well-Architected y el runbook de redespliegue |
-| [`infra/`](infra/) | Las 5 plantillas CloudFormation de toda la arquitectura — ver [`infra/README.md`](infra/README.md) |
-| [`codigo/`](codigo/) | Frontend + 4 microservicios Node.js + scripts de despliegue — ver [`codigo/README.md`](codigo/README.md) |
-| [`evidencias/`](evidencias/) | 29 capturas de la consola AWS organizadas por etapa — ver [`evidencias/README.md`](evidencias/README.md) |
-| [`diagramas/`](diagramas/) | Diagrama de arquitectura TO-BE en `.drawio`, `.xml` y `.png` |
-
----
-
 ## Estructura del repositorio
 
 ```
 .
+├── bootstrap.sh               Clona y despliega en una línea (curl … | bash)
 ├── up.sh                      Despliegue completo con un comando
 ├── Makefile                   Atajos: make up · check · demo · down · local
 ├── codigo/                    Aplicación: frontend nginx + 4 microservicios Node.js
@@ -71,34 +106,6 @@ Servicios de soporte: **Amazon ECR** (5 repositorios de imágenes ARM64), **NAT 
 ├── notas/bitacora.md          Bitácora técnica y runbook de redespliegue
 └── herramientas/              Utilidad para recortar capturas (stdlib, sin dependencias)
 ```
-
----
-
-## Reproducir el despliegue
-
-Clonar y ejecutar un comando. Desde AWS CloudShell, con el laboratorio activo:
-
-```bash
-git clone https://github.com/carlcuevas/ary1102-freshbox-cloud.git
-cd ary1102-freshbox-cloud
-./up.sh
-```
-
-Eso despliega los 5 stacks de CloudFormation, construye y publica las 5 imágenes Docker para ARM64 en Amazon ECR, conecta el Auto Scaling Group al balanceador, registra las instancias, configura el respaldo y espera a que el catálogo responda. Termina imprimiendo el DNS público. Toma unos 18 minutos; con las imágenes ya publicadas, `./up.sh --sin-imagenes` lo baja a 7.
-
-El resto del ciclo:
-
-```bash
-./infra/verify.sh     # estado de los stacks, targets healthy y catálogo respondiendo
-./infra/demo.sh todo  # recorrido de demostración: red, seguridad, HA, contenedores, CRUD
-./infra/teardown.sh   # elimina todo en orden inverso
-```
-
-Con `make` disponible: `make up`, `make check`, `make demo`, `make down`, y `make local` para levantar la aplicación en Docker Compose sin tocar AWS. `make help` lista todo.
-
-Los scripts resuelven los recursos por nombre y no por identificador, así que funcionan igual después de cada redespliegue —el laboratorio académico borra los recursos al expirar y los IDs cambian—. El detalle de cada paso, los parámetros de las plantillas y el procedimiento manual equivalente están en **[`infra/README.md`](infra/README.md)**; los comandos exactos del despliegue original, en la sección §10 de [`notas/bitacora.md`](notas/bitacora.md).
-
-Para probar la aplicación en local, sin AWS: `cd codigo && docker compose up -d`.
 
 ---
 
