@@ -27,10 +27,16 @@ Los cuatro scripts de este directorio automatizan el ciclo completo. Están escr
 | [`demo.sh`](demo.sh) | Recorrido de demostración en vivo, por bloques: red, seguridad, alta disponibilidad, contenedores, CRUD y respaldo. Imprime cada comando antes de ejecutarlo |
 | [`teardown.sh`](teardown.sh) | Elimina los 5 stacks en orden inverso. Conserva los repositorios de ECR para no repetir el build |
 
-```bash
-git clone https://github.com/carlcuevas/ary1102-freshbox-cloud.git
-cd ary1102-freshbox-cloud/infra
+Desde la raíz del repositorio, [`../up.sh`](../up.sh) encadena `deploy.sh` y `verify.sh` en un solo comando y es la forma recomendada de desplegar:
 
+```bash
+./up.sh                     # equivale a deploy.sh + verify.sh --esperar
+```
+
+Los scripts también se pueden usar por separado:
+
+```bash
+cd infra
 ./deploy.sh                 # infraestructura completa, ~15-20 min
 ./verify.sh --esperar       # reintenta mientras los contenedores levantan
 ./demo.sh todo              # recorrido de demostración

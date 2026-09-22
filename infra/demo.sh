@@ -187,6 +187,6 @@ case "$BLOQUE" in
   backup)       bloque_backup ;;
   todo)         bloque_red; bloque_seguridad; bloque_ha
                 bloque_contenedores; bloque_crud; bloque_backup ;;
-  *)            sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  *)            awk 'NR>1 && /^#/ {sub(/^# ?/,""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}"
                 exit 1 ;;
 esac

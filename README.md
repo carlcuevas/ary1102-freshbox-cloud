@@ -50,6 +50,8 @@ Servicios de soporte: **Amazon ECR** (5 repositorios de imágenes ARM64), **NAT 
 
 ```
 .
+├── up.sh                      Despliegue completo con un comando
+├── Makefile                   Atajos: make up · check · demo · down · local
 ├── codigo/                    Aplicación: frontend nginx + 4 microservicios Node.js
 │   ├── microservicioFrontend/   HTML/CSS/JS + nginx como reverse proxy interno
 │   ├── microserviciosBackend/   get / create / update / delete-product
@@ -74,19 +76,27 @@ Servicios de soporte: **Amazon ECR** (5 repositorios de imágenes ARM64), **NAT 
 
 ## Reproducir el despliegue
 
-La infraestructura completa se recrea desde cero en unos 15-20 minutos con un solo script:
+Clonar y ejecutar un comando. Desde AWS CloudShell, con el laboratorio activo:
 
 ```bash
 git clone https://github.com/carlcuevas/ary1102-freshbox-cloud.git
-cd ary1102-freshbox-cloud/infra
-
-./deploy.sh              # VPC, SGs, imágenes ARM64 en ECR, cómputo, ALB y respaldo
-./verify.sh --esperar    # comprueba stacks, targets healthy y el catálogo por el ALB
-./demo.sh todo           # recorrido de demostración: red, seguridad, HA, CRUD
-./teardown.sh            # elimina todo en orden inverso
+cd ary1102-freshbox-cloud
+./up.sh
 ```
 
-Los scripts filtran los recursos por nombre y no por identificador, así que funcionan igual después de cada redespliegue. El detalle de cada paso, los parámetros de las plantillas y el procedimiento manual equivalente están en **[`infra/README.md`](infra/README.md)**; los comandos exactos del despliegue original, en la sección §10 de [`notas/bitacora.md`](notas/bitacora.md).
+Eso despliega los 5 stacks de CloudFormation, construye y publica las 5 imágenes Docker para ARM64 en Amazon ECR, conecta el Auto Scaling Group al balanceador, registra las instancias, configura el respaldo y espera a que el catálogo responda. Termina imprimiendo el DNS público. Toma unos 18 minutos; con las imágenes ya publicadas, `./up.sh --sin-imagenes` lo baja a 7.
+
+El resto del ciclo:
+
+```bash
+./infra/verify.sh     # estado de los stacks, targets healthy y catálogo respondiendo
+./infra/demo.sh todo  # recorrido de demostración: red, seguridad, HA, contenedores, CRUD
+./infra/teardown.sh   # elimina todo en orden inverso
+```
+
+Con `make` disponible: `make up`, `make check`, `make demo`, `make down`, y `make local` para levantar la aplicación en Docker Compose sin tocar AWS. `make help` lista todo.
+
+Los scripts resuelven los recursos por nombre y no por identificador, así que funcionan igual después de cada redespliegue —el laboratorio académico borra los recursos al expirar y los IDs cambian—. El detalle de cada paso, los parámetros de las plantillas y el procedimiento manual equivalente están en **[`infra/README.md`](infra/README.md)**; los comandos exactos del despliegue original, en la sección §10 de [`notas/bitacora.md`](notas/bitacora.md).
 
 Para probar la aplicación en local, sin AWS: `cd codigo && docker compose up -d`.
 
