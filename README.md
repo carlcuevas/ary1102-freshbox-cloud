@@ -1,57 +1,126 @@
-# ARY1102 - Arquitectura Cloud | EP1
+# FreshBox SpA — Arquitectura Cloud de tres capas en AWS
 
-**Caso:** FreshBox SpA — Plataforma de Catálogo Online de Productos Orgánicos
-**Evaluación:** EP1 - Encargo con Presentación (40% de la asignatura)
+Entregable completo de la **Evaluación Parcial N°1** de ARY1102 (Arquitectura Cloud), Escuela de Informática y Telecomunicaciones, DuocUC.
 
-Este repositorio reúne el entregable completo de la Evaluación Parcial n°1: código fuente de la aplicación, evidencias del despliegue en AWS y las notas técnicas que sirven de base para el informe y la presentación.
+El caso pide diseñar y desplegar la plataforma de catálogo online de **FreshBox SpA**, una empresa chilena de productos orgánicos con despacho a domicilio que crece un 40% trimestral. Este repositorio contiene el informe técnico, la infraestructura como código, el código de la aplicación y la evidencia del despliegue real en AWS.
+
+El alcance de esta etapa es el **catálogo administrable de productos**. El carrito de compras y el procesamiento de órdenes quedan explícitamente fuera y se abordarán en etapas posteriores.
+
+---
+
+## Arquitectura implementada
+
+![Arquitectura TO-BE](diagramas/diagrama-arquitectura-tobe.png)
+
+Arquitectura de tres capas sobre una VPC `10.0.0.0/22`, con seis subredes /26 distribuidas en dos zonas de disponibilidad de `us-east-1`.
+
+| Capa | Componentes | Aislamiento |
+|---|---|---|
+| **Web** (pública) | Application Load Balancer `freshbox-alb`, internet-facing en 2 AZs | `freshbox-sg-alb`: 80/443 desde Internet |
+| **App** (privada) | 2 × EC2 `t4g.small` bajo Auto Scaling Group `freshbox-asg-app` (mín. 2 / máx. 4), 5 contenedores Docker cada una | `freshbox-sg-app`: solo tráfico cuyo origen es el SG del ALB |
+| **Data** (privada) | EC2 `t4g.small` con MariaDB, volumen EBS cifrado, respaldo diario vía AWS Backup | `freshbox-sg-bd`: solo 3306 desde el SG de App |
+
+Servicios de soporte: **Amazon ECR** (5 repositorios de imágenes ARM64), **NAT Gateway** para la salida controlada de las subredes privadas, **AWS Systems Manager Session Manager** para administración sin SSH ni llaves, **AWS Backup** con retención de 7 días y **AWS CloudFormation** para la totalidad de la infraestructura.
+
+**Decisiones de diseño relevantes**
+
+- Los Security Groups se encadenan **referenciando el SG de origen**, no rangos de IP, de modo que las reglas siguen siendo válidas cuando el Auto Scaling Group reemplaza instancias.
+- Las instancias usan **AWS Graviton (ARM64)** por relación precio-rendimiento, lo que obligó a construir las imágenes Docker para `linux/arm64` con `docker buildx` y emuladores QEMU.
+- La AMI se resuelve dinámicamente vía **SSM Parameter Store**, sin AMI ID fijo en las plantillas.
+- Se instaló **MariaDB** en lugar de MySQL Server: es el motor *wire-compatible* disponible nativamente en Amazon Linux 2023, y evita agregar repositorios externos.
+
+---
+
+## Entregables
+
+| Documento | Contenido |
+|---|---|
+| **[`informe/Informe-EP1-FreshBox-Carlos-Cuevas.pdf`](informe/Informe-EP1-FreshBox-Carlos-Cuevas.pdf)** | Informe técnico entregado: 20 páginas, puntos 1.1 a 1.7, 9 figuras y bibliografía APA v7 |
+| [`informe/informe-ep1-freshbox.md`](informe/informe-ep1-freshbox.md) | Fuente versionada del informe, con el mismo contenido que el PDF |
+| [`notas/bitacora.md`](notas/bitacora.md) | Bitácora técnica: identificadores reales de cada recurso, decisiones justificadas, 11 hallazgos mapeados a los pilares Well-Architected y el runbook de redespliegue |
+| [`infra/`](infra/) | Las 5 plantillas CloudFormation de toda la arquitectura — ver [`infra/README.md`](infra/README.md) |
+| [`codigo/`](codigo/) | Frontend + 4 microservicios Node.js + scripts de despliegue — ver [`codigo/README.md`](codigo/README.md) |
+| [`evidencias/`](evidencias/) | 29 capturas de la consola AWS organizadas por etapa — ver [`evidencias/README.md`](evidencias/README.md) |
+| [`diagramas/`](diagramas/) | Diagrama de arquitectura TO-BE en `.drawio`, `.xml` y `.png` |
+
+---
 
 ## Estructura del repositorio
 
 ```
-├── codigo/                      Proyecto FreshBox (frontend + 4 microservicios + scripts de despliegue)
-├── evidencias/                  Capturas de pantalla de la consola AWS, organizadas por etapa
-│   ├── 01-vpc-subredes/         VPC, subredes Multi-AZ, route tables, IGW, NAT Gateway
-│   ├── 02-security-groups/      Security Groups segmentados por capa (ALB, App, BD)
-│   ├── 03-ec2-mysql/            EC2 capa Data, cifrado EBS, AWS Backup
-│   ├── 04-ec2-app/               EC2 capa App (Multi-AZ), Docker, Auto Scaling Group
-│   ├── 05-ecr/                   Repositorios ECR con las 5 imágenes Docker
-│   ├── 06-alb-targetgroup/       Application Load Balancer y Target Group (health checks)
-│   └── 07-validacion-crud/       CRUD funcionando end-to-end vía DNS del ALB
-├── infra/                       Plantillas CloudFormation (IaC) de toda la arquitectura
-├── diagramas/                   Diagrama de arquitectura TO-BE (.drawio, .xml y .png)
-├── notas/
-│   ├── bitacora.md               Registro técnico: IDs reales, decisiones, hallazgos y runbook de redespliegue
-│   └── insumo-informe-y-presentacion.md   Material estructurado para redactar el informe y armar la presentación
-└── README.md
+.
+├── codigo/                    Aplicación: frontend nginx + 4 microservicios Node.js
+│   ├── microservicioFrontend/   HTML/CSS/JS + nginx como reverse proxy interno
+│   ├── microserviciosBackend/   get / create / update / delete-product
+│   ├── scripts/                 Push a ECR, despliegue de contenedores, user-data
+│   ├── docker-compose.yml       Entorno local de prueba
+│   └── init.sql                 Esquema y datos iniciales del catálogo
+├── infra/                     Infraestructura como código (CloudFormation)
+│   ├── 01-red.yaml              VPC, 6 subredes, IGW, NAT Gateway, route tables
+│   ├── 02-security-groups.yaml  3 Security Groups encadenados por capa
+│   ├── 03-compute.yaml          EC2 MariaDB + Launch Template + Auto Scaling Group
+│   ├── 04-alb.yaml              Application Load Balancer + Target Group
+│   └── 05-backup.yaml           Vault, plan diario y asignación de recurso
+├── evidencias/                Capturas de la consola AWS, por etapa del despliegue
+├── diagramas/                 Diagrama de arquitectura TO-BE
+├── informe/                   Informe técnico (PDF entregado + fuente Markdown)
+├── notas/bitacora.md          Bitácora técnica y runbook de redespliegue
+└── herramientas/              Utilidad para recortar capturas (stdlib, sin dependencias)
 ```
 
-## Estado del proyecto
+---
 
-- [x] Código corregido (fix de CRUD vía rutas relativas + network-alias)
-- [ ] Infraestructura de red (VPC, subredes, IGW, NAT Gateway)
-- [ ] Security Groups por capa
-- [ ] EC2 MySQL + AWS Backup
-- [ ] EC2 App (Multi-AZ) + Docker
-- [ ] Imágenes en ECR
-- [ ] ALB + Target Group + Auto Scaling Group
-- [ ] Validación CRUD end-to-end
-- [ ] Informe técnico (secciones 1.1 a 1.7)
-- [ ] Presentación + demo en vivo
+## Reproducir el despliegue
 
-## Documentos clave
+La infraestructura completa se recrea desde cero en unos 15-20 minutos ejecutando las plantillas en orden. El procedimiento detallado, con parámetros, verificaciones y desmontaje, está en **[`infra/README.md`](infra/README.md)**; la versión con los comandos exactos usados en el despliegue original está en la sección §10 de [`notas/bitacora.md`](notas/bitacora.md).
 
-| Documento | Para qué sirve |
-|---|---|
-| [`notas/bitacora.md`](notas/bitacora.md) | Bitácora técnica: IDs reales de todos los recursos, decisiones justificadas, 11 hallazgos mapeados a pilares Well-Architected, y el **runbook de redespliegue** completo |
-| [`notas/insumo-informe-y-presentacion.md`](notas/insumo-informe-y-presentacion.md) | Material estructurado e indicador por indicador para **redactar el informe técnico (1.1 a 1.7) y armar la presentación (2.1 a 2.5)** |
+```bash
+git clone https://github.com/carlcuevas/ary1102-freshbox-cloud.git
+cd ary1102-freshbox-cloud/infra
+# 1) red → 2) security groups → 3) imágenes a ECR → 4) compute → 5) ALB → 6) backup
+```
 
-## Estado
-
-La **parte técnica está completa y verificada**: los 16 componentes de la arquitectura TO-BE exigida por el caso están desplegados en AWS, con 29 capturas de evidencia y validación CRUD end-to-end.
-
-Pendiente: informe técnico (PDF/Word, máx. 20 págs), presentación PowerPoint y ensayo de redespliegue.
-
-⚠️ **AWS Academy Learner Lab elimina los recursos al expirar.** Si eso ocurre, el runbook de `notas/bitacora.md` §10 recrea todo en ~15-20 minutos — pero los IDs y el DNS del ALB cambiarán.
+Para probar la aplicación en local, sin AWS: `cd codigo && docker compose up -d`.
 
 ---
-2026 - FreshBox SpA / DuocUC ARY1102
+
+## Hallazgos y brechas declaradas
+
+El informe declara explícitamente las limitaciones del diseño en lugar de presentarlo como cerrado. Resumen de las brechas vigentes y su ruta de mejora (desarrolladas en el punto 1.3 del informe):
+
+| Brecha | Pilar afectado | Mejora propuesta |
+|---|---|---|
+| ALB sin listener HTTPS (solo puerto 80) | Seguridad | Certificado ACM + listener 443, TLS ≥ 1.2 y redirección 80→443 |
+| Contraseña de BD como parámetro del template (`NoEcho`) | Seguridad | AWS Secrets Manager o SSM Parameter Store `SecureString` con rotación |
+| NAT Gateway único en `us-east-1a` | Fiabilidad | Un NAT Gateway por AZ, con route table privada por zona |
+| Base de datos autoadministrada en EC2, sin réplica | Fiabilidad / Excelencia operativa | Amazon RDS for MySQL Multi-AZ |
+| Sin observabilidad (métricas, logs centralizados, alarmas) | Excelencia operativa | CloudWatch Agent, un log group por microservicio, alarmas de 5XX y CPU |
+| ASG sin política de escalado dinámico | Eficiencia del rendimiento | Target Tracking Scaling sobre CPU o `RequestCountPerTarget` |
+| `HealthCheckType: EC2` en el ASG, no `ELB` | Fiabilidad | Cambiar a `ELB` y apuntar el health check a `/api/products` |
+| IP privada de la BD inyectada en el UserData | Fiabilidad | Resolución por DNS privado (Route 53) o endpoint gestionado de RDS |
+
+Durante el desarrollo se detectaron y corrigieron además cuatro defectos reales: el frontend llamaba a puertos fijos en lugar de rutas relativas (habría fallado detrás del ALB), los nombres de contenedor no coincidían con los hostnames que resuelve nginx, las imágenes `amd64` eran incompatibles con las instancias Graviton, y MySQL Server no está disponible en los repositorios de Amazon Linux 2023. Cada uno está documentado con su causa y su mitigación en [`notas/bitacora.md`](notas/bitacora.md).
+
+---
+
+## Despliegue verificado
+
+| | |
+|---|---|
+| Cuenta AWS | `334767299218` (AWS Academy Learner Lab) |
+| Región | `us-east-1` |
+| Fecha de verificación | 18 de septiembre de 2026 |
+| DNS del balanceador | `freshbox-alb-933788468.us-east-1.elb.amazonaws.com` |
+| Validación funcional | CRUD completo (GET/POST/PUT/DELETE) end-to-end a través del ALB |
+
+> **Los recursos ya no existen.** AWS Academy Learner Lab elimina la infraestructura al expirar la sesión del laboratorio, por lo que el DNS y los identificadores citados corresponden al despliegue verificado en la fecha indicada y no a un entorno activo. El repositorio conserva la infraestructura como código y el runbook necesarios para recrear el entorno completo; al hacerlo, los identificadores y el DNS cambian, mientras que los nombres lógicos y los CIDR se mantienen.
+
+---
+
+## Autoría
+
+**Carlos Cuevas** — carl.cuevasn@duocuc.cl · Sección ARY1102 · Docente: Rodrigo Horacio Aguilar González
+
+La aplicación de catálogo fue entregada como base por la asignatura — diseñador: Ignacio A. Pastenet M. El trabajo de arquitectura cloud, la infraestructura como código, la corrección de los defectos del código, el despliegue en AWS y la documentación corresponden a este entregable.
+
+Material académico desarrollado para DuocUC. Las credenciales presentes en el código y en las plantillas son de laboratorio, no productivas; su gestión adecuada está declarada como brecha de seguridad en el informe.
